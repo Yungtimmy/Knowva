@@ -1,0 +1,79 @@
+@import "../../design/tokens.css";
+
+* { box-sizing: border-box; }
+
+html, body { min-height: 100%; }
+
+body {
+  margin: 0;
+  font-family: var(--kn-font);
+  color: var(--kn-ink);
+  background:
+    var(--kn-cream)
+    radial-gradient(var(--kn-cream-dot) 1.4px, transparent 1.5px) 0 0 / 22px 22px;
+}
+
+button, input, select, textarea { font-family: inherit; }
+
+.gate {
+  max-width: 440px;
+  margin: 48px auto;
+  padding: 0 16px 48px;
+}
+
+.gate h1 {
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  font-size: 32px;
+  margin: 12px 0;
+}
+
+.gate p { color: var(--kn-ink-2); line-height: 1.5; }
+
+.gate form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 20px;
+}
+
+.gate label { font-size: 13px; font-weight: 500; color: var(--kn-ink-3); }
+
+.gate input, .gate select {
+  width: 100%;
+  margin-top: 4px;
+  padding: 12px;
+  border-radius: 12px;
+  border: 1.5px solid var(--kn-line);
+  background: var(--kn-surface);
+  color: var(--kn-ink);
+  font-size: 15px;
+}
+
+.gate .primary {
+  margin-top: 8px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--kn-orange);
+  color: var(--kn-cream);
+  font-weight: 600;
+  font-size: 16px;
+  padding: 14px 20px;
+  box-shadow: 0 5px 0 var(--kn-orange-deep);
+  cursor: pointer;
+}
+
+.gate .primary:hover { transform: translateY(2px); box-shadow: 0 3px 0 var(--kn-orange-deep); }
+
+.gate .row { display: flex; gap: 8px; }
+
+.gate .ghost {
+  border-radius: 999px;
+  border: 1.5px solid var(--kn-ink);
+  background: transparent;
+  padding: 12px 16px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.gate .error { color: var(--kn-orange-deep); font-size: 14px; }
