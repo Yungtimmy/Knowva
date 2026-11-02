@@ -1,18 +1,40 @@
 import { z } from "zod";
 
-export const tutorChatSchema = z.object({
-  level: z.string().trim().min(1).max(20),
-  subject: z.string().trim().min(1).max(60),
-  topic: z.string().trim().min(1).max(120),
-  message: z.string().trim().min(2).max(2000),
-  mode: z.enum(["explain", "simpler", "example", "diagram"]).optional(),
-});
+export const tutorChatSchema = z
+  .object({
+    tutorId: z.string().trim().min(1).max(80).optional(),
+    level: z.string().trim().min(1).max(40).optional(),
+    subject: z.string().trim().min(1).max(120).optional(),
+    topic: z.string().trim().min(1).max(160).optional(),
+    message: z.string().trim().min(2).max(2000),
+    mode: z.enum(["explain", "simpler", "example", "diagram"]).optional(),
+  })
+  .superRefine((value, ctx) => {
+    if (!value.tutorId && (!value.level || !value.subject || !value.topic)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Send a tutorId, or level, subject, and topic.",
+        path: ["tutorId"],
+      });
+    }
+  });
 
-export const materialsSchema = z.object({
-  subject: z.string().trim().min(1).max(60),
-  topic: z.string().trim().min(1).max(120),
-  notes: z.string().trim().min(20).max(12000),
-});
+export const materialsSchema = z
+  .object({
+    subject: z.string().trim().min(1).max(80),
+    topic: z.string().trim().min(1).max(160),
+    notes: z.string().trim().max(12000).optional(),
+    pdfBase64: z.string().trim().max(2_000_000).optional(),
+  })
+  .superRefine((value, ctx) => {
+    if (!value.pdfBase64 && (value.notes?.trim().length ?? 0) < 20) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Paste at least a few sentences or add a text PDF.",
+        path: ["notes"],
+      });
+    }
+  });
 
 const questionSchema = z.object({
   id: z.string().trim().min(1).max(80),
@@ -68,6 +90,9 @@ export const recommendSchema = z
     total: z.number().int().positive().max(50),
     tutorHref: z.string().trim().max(200).optional(),
     quizHref: z.string().trim().max(200).optional(),
+    level: z.string().trim().max(40).optional(),
+    preference: z.enum(["video", "pdf", "course", "mixed"]).optional(),
+    weakTopic: z.string().trim().max(160).optional(),
   })
   .refine((value) => value.score <= value.total, {
     message: "Score cannot be higher than the total.",
@@ -96,14 +121,15 @@ export const modelTutorSchema = z.object({
   short: z.string().min(1).max(700),
   steps: z.array(z.string().min(1).max(400)).min(2).max(6),
   remember: z.string().min(1).max(240),
+  next: z.string().min(1).max(240),
 });
 
 export const modelPackSchema = z.object({
-  summary: z.array(z.string().min(1).max(300)).min(3).max(6),
-  flashcards: z
-    .array(z.object({ q: z.string().min(1).max(200), a: z.string().min(1).max(300) }))
+  outline: z.array(z.string().min(1).max(300)).min(3).max(8),
+  keyTerms: z
+    .array(z.object({ term: z.string().min(1).max(80), meaning: z.string().min(1).max(300) }))
     .min(3)
-    .max(12),
+    .max(8),
   questions: z
     .array(
       z.object({
@@ -111,10 +137,63 @@ export const modelPackSchema = z.object({
         options: z.array(z.string().min(1).max(200)).min(3).max(4),
         answerIndex: z.number().int().nonnegative(),
         explanation: z.string().min(1).max(400),
+        topic: z.string().min(1).max(120).optional(),
       }),
     )
-    .min(3)
-    .max(8),
+    .length(5),
+});
+
+export const learningLevelSchema = z.enum(["beginner", "intermediate", "advanced"]);
+export const explanationStyleSchema = z.enum(["step_by_step", "example_first", "concise"]);
+export const learningGoalSchema = z.enum(["pass_exam", "understand_basics", "practise_problems", "revise_fast"]);
+
+export const tutorWriteSchema = z.object({
+  name: z.string().trim().min(1).max(80),
+  course: z.string().trim().min(1).max(120),
+  focus: z.string().trim().min(1).max(500),
+  level: learningLevelSchema,
+  explanationStyle: explanationStyleSchema,
+  goals: z.array(learningGoalSchema).max(4),
+});
+
+export const tutorPatchSchema = tutorWriteSchema.partial().refine((value) => Object.keys(value).length > 0, {
+  message: "Send a field to change.",
+});
+
+export const resourcesSchema = z.object({
+  subject: z.string().trim().min(1).max(120),
+  topic: z.string().trim().min(1).max(160),
+  level: z.string().trim().min(1).max(40).optional(),
+  preference: z.enum(["video", "pdf", "course", "mixed"]),
+  weakTopic: z.string().trim().max(160).optional(),
+});
+
+export const testCreateSchema = z.object({
+  course: z.string().trim().min(1).max(120),
+  questionCount: z.number().int().min(1).max(20).optional(),
+  difficulty: z.enum(["easy", "medium", "hard"]).optional(),
+  topics: z.array(z.string().trim().min(1).max(80)).max(8).optional(),
+  format: z.literal("multiple_choice").optional(),
+  tutorId: z.string().trim().min(1).max(80).optional(),
+});
+
+export const testSubmitSchema = z.object({
+  answers: z.array(z.number().int()).max(20),
+});
+
+export const modelTestSchema = z.object({
+  questions: z
+    .array(
+      z.object({
+        prompt: z.string().min(1).max(400),
+        options: z.array(z.string().min(1).max(200)).length(4),
+        answerIndex: z.number().int().min(0).max(3),
+        explanation: z.string().min(1).max(400),
+        topic: z.string().min(1).max(120),
+      }),
+    )
+    .min(1)
+    .max(20),
 });
 
 export const modelOutlineSchema = z.object({

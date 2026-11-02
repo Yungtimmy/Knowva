@@ -20,13 +20,19 @@ export function MaterialsStudio() {
   const [busy, setBusy] = useState(false);
   const [note, setNote] = useState("");
   const [pdfNote, setPdfNote] = useState("");
+  const [pdfBase64, setPdfBase64] = useState<string | null>(null);
 
   async function onSubmit(event: FormEvent) {
     event.preventDefault();
     setBusy(true);
     setNote("");
     try {
-      const data = await postJson<Response>("/api/materials/generate", { subject, topic, notes });
+      const data = await postJson<Response>("/api/materials/generate", {
+        subject,
+        topic,
+        notes,
+        pdfBase64: pdfBase64 ?? undefined,
+      });
       setPack(data.pack);
       const stored = readStore<Record<string, StudyPack>>("knowva.packs", {});
       stored[data.pack.id] = data.pack;
@@ -77,7 +83,23 @@ export function MaterialsStudio() {
               type="file"
               accept="application/pdf"
               hidden
-              onChange={() => setPdfNote("Paste the notes for now. Text PDF extraction is not in this build.")}
+              onChange={(event) => {
+                const file = event.target.files?.[0];
+                if (!file) return;
+                if (file.size > 1_500_000) {
+                  setPdfBase64(null);
+                  setPdfNote("That PDF is too large. Paste the notes.");
+                  return;
+                }
+                const reader = new FileReader();
+                reader.onload = () => {
+                  const result = typeof reader.result === "string" ? reader.result : "";
+                  const base64 = result.split(",")[1] ?? "";
+                  setPdfBase64(base64 || null);
+                  setPdfNote(base64 ? "Text PDF attached. Scanned pages are refused." : "Could not read that PDF.");
+                };
+                reader.readAsDataURL(file);
+              }}
             />
           </label>
           <span className="meta">Text PDFs, up to 10 pages</span>

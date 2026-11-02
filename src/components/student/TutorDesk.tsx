@@ -4,14 +4,14 @@ import Link from "next/link";
 import { useMemo, useState } from "react";
 import { postJson } from "@/lib/api-client";
 import { demoTutorReply } from "@/lib/demo";
-import type { TutorCard, TutorMessage } from "@/lib/types";
+import type { ResourceBundle, TutorCard, TutorMessage } from "@/lib/types";
 
-type Reply = { demo?: boolean; message: TutorMessage };
+type Reply = { demo?: boolean; message: TutorMessage; resources?: ResourceBundle | null };
 
 const LEVELS = ["SS1", "SS2", "SS3"];
 const SUBJECTS = ["Biology", "Mathematics", "Physics", "English"];
 
-export function TutorDesk({ tutor }: { tutor?: TutorCard }) {
+export function TutorDesk({ tutor, persistedId }: { tutor?: TutorCard; persistedId?: string }) {
   const [level, setLevel] = useState(tutor?.level ?? "SS2");
   const [subject, setSubject] = useState(tutor?.subject ?? "Biology");
   const [topic, setTopic] = useState(tutor?.topic ?? "Photosynthesis");
@@ -19,6 +19,7 @@ export function TutorDesk({ tutor }: { tutor?: TutorCard }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [demo, setDemo] = useState(false);
+  const [resources, setResources] = useState<ResourceBundle | null>(null);
   const opening = useMemo(() => openingThread(tutor), [tutor]);
   const [messages, setMessages] = useState<TutorMessage[]>(opening);
 
@@ -30,8 +31,16 @@ export function TutorDesk({ tutor }: { tutor?: TutorCard }) {
     setMessages((current) => [...current, { role: "user", short: text, steps: [], remember: "" }]);
     setDraft("");
     try {
-      const data = await postJson<Reply>("/api/tutor/chat", { level, subject, topic, message: text, mode });
+      const data = await postJson<Reply>("/api/tutor/chat", {
+        tutorId: persistedId,
+        level,
+        subject,
+        topic,
+        message: text,
+        mode,
+      });
       setDemo(Boolean(data.demo));
+      setResources(data.resources ?? null);
       setMessages((current) => [...current, data.message]);
     } catch (caught) {
       const fallback = demoTutorReply({ subject, topic, message: text, mode });
@@ -61,7 +70,8 @@ export function TutorDesk({ tutor }: { tutor?: TutorCard }) {
           </div>
           <div>
             <label htmlFor="subject">Subject</label>
-            <select id="subject" value={subject} onChange={(event) => setSubject(event.target.value)}>
+            <select id="subject" value={subject} disabled={Boolean(persistedId)} onChange={(event) => setSubject(event.target.value)}>
+              {persistedId ? <option>{subject}</option> : null}
               {SUBJECTS.map((item) => (
                 <option key={item}>{item}</option>
               ))}
@@ -124,6 +134,12 @@ export function TutorDesk({ tutor }: { tutor?: TutorCard }) {
                       <p>{message.remember}</p>
                     </>
                   ) : null}
+                  {message.next ? (
+                    <>
+                      <h3 style={{ margin: "12px 0 6px" }}>Next</h3>
+                      <p>{message.next}</p>
+                    </>
+                  ) : null}
                 </div>
               </div>
             ),
@@ -150,7 +166,25 @@ export function TutorDesk({ tutor }: { tutor?: TutorCard }) {
               Start practice
             </Link>
           </div>
-          {demo ? <p className="meta">Demo answer. Add an LLM key to use the model.</p> : null}
+          {demo ? <p className="meta">Demo answer. Add GROQ_API_KEY to use the model.</p> : null}
+          {resources ? (
+            <div className="card" style={{ margin: 0 }}>
+              <h3>Resources</h3>
+              {[...resources.primary, ...resources.alternates].map((item) => (
+                <p key={`${item.role}-${item.title}`} className="meta">
+                  <span className="type">{item.type}</span> {item.title}
+                  {item.verified && item.url ? (
+                    <>
+                      {" "}
+                      <a href={item.url}>Open</a> <span className="ok">Checked link</span>
+                    </>
+                  ) : (
+                    <> · {item.searchQuery}</>
+                  )}
+                </p>
+              ))}
+            </div>
+          ) : null}
           {error ? <p className="meta">{error}</p> : null}
           {busy ? <p className="meta">Writing the explanation.</p> : null}
         </div>

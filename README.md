@@ -14,18 +14,19 @@ npm run dev
 
 Open [http://localhost:3000](http://localhost:3000).
 
-Leave the LLM and Supabase keys blank to use demo mode. Generation routes still answer: they validate the body and return **503** with a demo payload (`demo: true`). Quiz scoring and recommendations are rules in code. They do not call a model. With no LLM key they also return 503 plus the computed payload so the screens keep working.
+Leave the Groq and Supabase keys blank to use demo mode. Tutor chat, materials, and Test Centre generation still answer: they validate the body and return **503** with a demo payload (`demo: true`). Creating a tutor does not train a model. It stores a config. Quiz scoring, Test Centre scoring, and resource ranking are rules in code. They do not call a model. Resource links are a curated allowlist. `verified` is true only after the server checks that the URL responds. Anything else is a search query, not a link.
 
 | Variable | Where it is used |
 |---|---|
 | `NEXT_PUBLIC_SUPABASE_URL` | Browser and server Supabase client |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Public client key. Never put the service role here |
 | `SUPABASE_SERVICE_ROLE_KEY` | Server only. Sets a teacher role at signup. Without it, new accounts stay students |
-| `OPENAI_API_KEY` or `LLM_API_KEY` | Server only. Either one turns on the model |
-| `LLM_BASE_URL` or `OPENAI_BASE_URL` | Optional OpenAI-compatible Chat Completions base URL |
-| `LLM_MODEL` | Model id for that endpoint. Default `gpt-4o-mini` |
+| `GROQ_API_KEY` | Server only. Turns on Groq for tutor chat, materials, and test generation. Never commit it |
+| `OPENAI_API_KEY` or `LLM_API_KEY` | Server only. Used only when `GROQ_API_KEY` is blank |
+| `LLM_BASE_URL` or `OPENAI_BASE_URL` | Optional OpenAI-compatible Chat Completions base URL. Groq defaults to `https://api.groq.com/openai/v1` |
+| `LLM_MODEL` | Model id. Default `openai/gpt-oss-20b` on Groq, otherwise `gpt-4o-mini` |
 
-Apply `supabase/migrations/20261102120000_profiles_quiz_attempts_saved_materials.sql` in the Supabase SQL editor when you have a project. The migration expects Supabase Auth (`auth.users`). It does not create a project.
+Apply both files in `supabase/migrations/` in the Supabase SQL editor when you have a project. The migrations expect Supabase Auth (`auth.users`). They do not create a project. Without Supabase, tutors, packs, and tests live in a server session file (`.data/`, gitignored) keyed by an httpOnly cookie.
 
 `npm run build` typechecks and builds. `npm run check:rules` checks the gap rule, quiz scoring, recommendations, and the assign gate.
 
@@ -62,12 +63,19 @@ Demo personas on the screens are Ada (student) and Mrs. Adeyemi (teacher). `/log
 | Route | Screen |
 |---|---|
 | `/` | Landing |
-| `/student` | Home v2, stacked subject tutors |
-| `/student/tutor` | Tutor picker and chat |
-| `/student/tutor/[sessionId]` | One subject tutor (`maths`, `biology`, `physics`, `english`) |
-| `/student/materials` | Notes in, study pack out |
+| `/student` | Home v2, stacked tutors. Saved tutors replace the sample cards |
+| `/student/tutors` | Tutor library. Create, edit, delete |
+| `/student/tutors/new` | Create a tutor. `?id=` edits one |
+| `/student/tutor` | Sample tutor chat |
+| `/student/tutor/[sessionId]` | Sample subject (`maths`, `biology`, `physics`, `english`) or a saved tutor id |
+| `/student/learn` | Discover resources and saved packs |
+| `/student/materials` | Notes or a text PDF in, study pack out |
 | `/student/materials/[packId]` | A saved pack (`cell-structure` is the sample) |
-| `/student/quiz/[quizId]` | One question at a time. `?review=1` or `#review` opens the photosynthesis results state |
+| `/student/tests` | Test Centre. Start a course MCQ |
+| `/student/tests/[id]` | Take a test. Tab bar hidden. Tutor chat locked |
+| `/student/tests/[id]/results` | Score, explanations, weak topics |
+| `/student/progress` | Test history and topic percentages |
+| `/student/quiz/[quizId]` | Practice quiz, separate from Test Centre. `?review=1` or `#review` opens the photosynthesis results state |
 | `/teacher` | Teacher home |
 | `/teacher/lesson/new` | Lesson generator |
 | `/teacher/lesson/[id]` | Editable outline (`quadratics` is the sample) |
@@ -77,7 +85,9 @@ Demo personas on the screens are Ada (student) and Mrs. Adeyemi (teacher). `/log
 | `/teacher/class/[classId]` | Class insights (`ss2a`, `ss2b`, `ss1a`, `ss3a`) |
 | `/login` | Email sign-in. Optional |
 
-Bottom tabs: Home, Tutor, Materials, Quizzes. Teacher sidebar: Home, Lesson outlines, Quizzes and marking, Class insights.
+Student tabs: Home, Tutors, Learn, Tests, Progress. Practice quizzes stay off that bar. Teacher sidebar: Home, Lesson outlines, Quizzes and marking, Class insights.
+
+Student screens follow `design/student/` (including the PRD v1 mocks: `tutors.html`, `create-tutor.html`, `learn.html`, `test-centre.html`, `test-take.html`, `test-results.html`, `progress.html`). The React routes are thin wiring over those class names. Timed tests are not in this build. Test take is untimed.
 
 ### Rules
 
@@ -86,6 +96,11 @@ Bottom tabs: Home, Tutor, Materials, Quizzes. Teacher sidebar: Home, Lesson outl
 - Every generator shows “Review and edit before classroom use.”
 - One quiz score is a signal, not a measure of ability. Below 60% recommends a tutor review, 60–79% more practice, 80% and above a harder set.
 - Quiz scores come from the answer key on the server. The client does not send the score.
+- A student can keep 8 tutors. The ninth create returns 409.
+- A saved tutor answers only its own course. Student focus, goals, and pasted notes are preferences. They cannot override the safety rules.
+- Test Centre hides the answer key until submit. Weak topics are those under 60%, the same gap threshold as class averages.
+- An open Test Centre paper locks `/api/tutor/chat` until it is submitted. Practice `/api/quiz/score` stays available.
+- Resource Agent returns at most 3 primary and 2 alternate items. Preference order is video → YouTube, pdf → textbook, course → syllabus, mixed → a blend. A weak topic limits the set to that topic.
 
 ### Types
 
@@ -94,11 +109,17 @@ Defined in [`src/lib/types.ts`](src/lib/types.ts).
 Student:
 
 - `Subject` — `{ name, topics: { name, progress }[] }`
-- `TutorMessage` — `{ role: "user" \| "tutor", short, steps, remember }`
-- `StudyPack` — `{ id, subject, topic, summary, flashcards: { q, a }[], questions }`
+- `Tutor` — `{ id, name, course, focus, level: "beginner" \| "intermediate" \| "advanced", explanationStyle: "step_by_step" \| "example_first" \| "concise", goals: ("pass_exam" \| "understand_basics" \| "practise_problems" \| "revise_fast")[], createdAt, updatedAt }`
+- `TutorMessage` — `{ role: "user" \| "tutor", short, steps, remember, next? }`
+- `StudyPack` — `{ id, subject, topic, summary, flashcards: { q, a }[], questions, outline?, keyTerms?: { term, meaning }[] }`
 - `Question` — `{ id, prompt, options, answerIndex, explanation, subject, topic, marks? }`
+- `PublicQuestion` — question without `answerIndex` or `explanation`
 - `Attempt` — `{ quizId, score, total, missed }` (`missed` is question indexes)
-- `TutorCard` — `{ id, subject, level, topic, status: "ready" \| "needs_review" \| "in_lesson", preview, updatedAt }`
+- `TutorCard` — `{ id, subject, level, topic, status: "ready" \| "needs_review" \| "in_lesson", preview, updatedAt, name? }`
+- `ResourceBundle` — `{ subject, topic, preference: "video" \| "pdf" \| "course" \| "mixed", primary[], alternates[] }`. Each item is `{ title, type: "youtube" \| "pdf" \| "course" \| "notes" \| "practice", url, searchQuery, why, confidence, verified, role, source }`
+- `TestPaper` — open paper with `PublicQuestion[]`
+- `TestResult` — `{ score, total, topicBreakdown, weakTopics, items, recommendations, resources, submittedAt }`
+- `ProgressReport` — `{ testsTaken, averagePercent, topics, weakTopics, history }`
 
 Teacher:
 
@@ -112,18 +133,27 @@ Teacher:
 
 All POST. Invalid JSON fields return 400.
 
-| Route | Body | No LLM key |
+| Route | Body | No Groq key |
 |---|---|---|
-| `/api/tutor/chat` | `level, subject, topic, message, mode?` | 503 + `message: TutorMessage` |
-| `/api/materials/generate` | `subject, topic, notes` | 503 + `pack: StudyPack` |
-| `/api/quiz/score` | `quizId, subject, topic, questions, answers` | 503 + computed `attempt` and `recommendation` |
-| `/api/recommend` | `subject, topic, score, total` | 503 + rules-based `recommendation` |
-| `/api/teacher/generate` | `kind: outline \| notes \| quiz \| marking_guide`, plus level, subject, topic | 503 + a draft. Status is always `draft` |
+| `GET/POST /api/tutors` | create: `name, course, focus, level, explanationStyle, goals` | 200 or 201. Cap is 409 |
+| `GET/PATCH/DELETE /api/tutors/[id]` | patch: any create field | 200. Unknown id is 404 |
+| `POST /api/tutor/chat` | `message`, plus `tutorId` or `level, subject, topic`. `mode?` | 503 + `message`. Wrong course is 400. Open test is 423 |
+| `POST /api/materials/generate` | `subject, topic`, and `notes` and/or `pdfBase64` | 503 + `pack` with outline, key terms, and 5 questions |
+| `GET /api/materials` | — | 200 + saved packs for this session |
+| `POST /api/resources` | `subject, topic, preference`, optional `level`, `weakTopic` | 200. Code ranking, not the model |
+| `POST /api/tests` | `course, questionCount (1–20), difficulty: easy \| medium \| hard, topics?, format?` | 503 + public `test` (no answer key) |
+| `GET /api/tests` and `GET /api/tests/[id]` | — | 200. Open papers omit the key |
+| `POST /api/tests/[id]/submit` | `answers: number[]`. Missing or negative means blank | 200 + `result` |
+| `GET /api/tests/[id]/results` | — | 200 after submit. 409 before submit |
+| `GET /api/progress` | — | 200 + topic rollup |
+| `POST /api/quiz/score` | `quizId, subject, topic, questions, answers` | 503 + computed `attempt`, `topicBreakdown`, and `recommendation` |
+| `POST /api/recommend` | `subject, topic, score, total`, optional `preference` | 503 + rules-based `recommendation`. `resources` when `preference` is set |
+| `POST /api/teacher/generate` | `kind: outline \| notes \| quiz \| marking_guide`, plus level, subject, topic | 503 + a draft. Status is always `draft` |
 
-With a key, tutor, materials, and teacher generate call the model and return 200. A model failure is 502. Scoring never calls the model.
+With `GROQ_API_KEY`, tutor chat, materials, test generation, and teacher generate call Groq and return 200 (test create returns 201). A model failure is 502. Scoring never calls the model. The Resource Agent never asks the model for URLs.
 
-Signed-in users get quiz attempts and generated packs written to their own rows. The UI also keeps drafts in `localStorage` so the demo works with no database.
+Signed-in users get tutors, quiz attempts, test results, and generated packs written to their own rows. The UI also keeps drafts in `localStorage` so the demo works with no database. Answer keys for an open test stay in the server session store.
 
 ### Database
 
-`profiles` (role `student` or `teacher`), `quiz_attempts`, `saved_materials`. RLS is own-rows only. Clients cannot update `profiles.role`. Text PDF extraction is not in this build. Paste the notes.
+`profiles` (role `student` or `teacher`), `quiz_attempts`, `saved_materials`, `tutors`, `test_attempts`. RLS is own-rows only. Clients cannot update `profiles.role`. A trigger refuses a ninth tutor. Text PDFs with a text layer can be extracted on `POST /api/materials/generate`. Scanned pages are refused. OCR is not in this build.
