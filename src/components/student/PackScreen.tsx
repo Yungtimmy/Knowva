@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { readStore } from "@/lib/browser-store";
+import { getJson } from "@/lib/api-client";
+import { readStore, writeStore } from "@/lib/browser-store";
 import type { StudyPack } from "@/lib/types";
 import { PackView } from "./PackView";
 
@@ -12,6 +13,16 @@ export function PackScreen({ packId, fallback }: { packId: string; fallback: Stu
   useEffect(() => {
     const stored = readStore<Record<string, StudyPack>>("knowva.packs", {});
     if (stored[packId]) setPack(stored[packId]);
+    getJson<{ materials: StudyPack[] }>("/api/materials")
+      .then((data) => {
+        const found = data.materials.find((item) => item.id === packId);
+        if (!found) return;
+        setPack(found);
+        const next = readStore<Record<string, StudyPack>>("knowva.packs", {});
+        next[found.id] = found;
+        writeStore("knowva.packs", next);
+      })
+      .catch(() => undefined);
   }, [packId]);
 
   return (

@@ -11,6 +11,15 @@ import type { Attempt, Question, Recommendation } from "@/lib/types";
 type Quiz = { id: string; subject: string; topic: string; questions: Question[] };
 type ScoreResponse = { demo?: boolean; attempt: Attempt; recommendation: Recommendation };
 
+function tutorHref(subject: string) {
+  const text = subject.toLowerCase();
+  if (text.includes("bio")) return "/student/tutor/biology";
+  if (text.includes("math")) return "/student/tutor/maths";
+  if (text.includes("physic")) return "/student/tutor/physics";
+  if (text.includes("english")) return "/student/tutor/english";
+  return "/student/tutors";
+}
+
 export function QuizPlayer({
   quizId,
   fallback,
@@ -196,7 +205,7 @@ export function QuizPlayer({
           ) : null}
           {note ? <p className="meta">{note}</p> : null}
           <div className="two" style={{ marginTop: 16 }}>
-            <Link className="btn btn-ghost" href="/student/tutor">
+            <Link className="btn btn-ghost" href={tutorHref(currentQuiz.subject)}>
               Ask tutor
             </Link>
             <button className="btn btn-primary" type="button" onClick={retry}>

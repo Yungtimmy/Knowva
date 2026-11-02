@@ -12,6 +12,7 @@ const TABS = [
 ] as const;
 
 function tabId(pathname: string) {
+  if (pathname.startsWith("/student/quiz")) return "tests";
   if (pathname.startsWith("/student/tutors") || pathname.startsWith("/student/tutor")) return "tutors";
   if (pathname.startsWith("/student/learn") || pathname.startsWith("/student/materials")) return "learn";
   if (pathname.startsWith("/student/tests")) return "tests";
@@ -23,16 +24,37 @@ function testInProgress(pathname: string) {
   return /^\/student\/tests\/[^/]+$/.test(pathname);
 }
 
+function headerKind(pathname: string) {
+  if (testInProgress(pathname)) return "lock";
+  if (pathname.startsWith("/student/tutors/new")) return "tutors";
+  if (/^\/student\/tests\/[^/]+\/results\/?$/.test(pathname)) return "tests";
+  return "logo";
+}
+
 export function StudentShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const active = tabId(pathname);
-  const locked = testInProgress(pathname);
+  const kind = headerKind(pathname);
+  const practice = pathname.startsWith("/student/quiz");
   return (
     <>
-      <main className={active === "home" && !locked ? "app dash" : "app"}>
+      <main className={active === "home" && kind !== "lock" ? "app dash" : "app"}>
+        {practice ? (
+          <p className="meta" style={{ marginBottom: 8 }}>
+            Practice quiz · not graded as a test
+          </p>
+        ) : null}
         <header className="top">
-          {locked ? (
+          {kind === "lock" ? (
             <span className="lock">Test in progress · tutor locked</span>
+          ) : kind === "tutors" ? (
+            <Link className="back" href="/student/tutors">
+              ← My tutors
+            </Link>
+          ) : kind === "tests" ? (
+            <Link className="back" href="/student/tests">
+              ← Test Centre
+            </Link>
           ) : (
             <Link className="logo" href="/student">
               <svg width="18" height="12" viewBox="0 0 22 14" aria-hidden="true">
@@ -42,7 +64,7 @@ export function StudentShell({ children }: { children: React.ReactNode }) {
               Knowva
             </Link>
           )}
-          {locked ? (
+          {kind === "lock" ? (
             <span className="meta">Untimed</span>
           ) : (
             <Link href="/login" className="avatar" style={{ textDecoration: "none" }} aria-label="Account">
@@ -52,15 +74,20 @@ export function StudentShell({ children }: { children: React.ReactNode }) {
         </header>
         {children}
       </main>
-      {locked ? null : (
-      <nav className="tabbar" aria-label="Student">
-        {TABS.map((tab) => (
-          <Link key={tab.id} href={tab.href} className={active === tab.id ? "on" : undefined} aria-current={active === tab.id ? "page" : undefined}>
-            <TabIcon id={tab.id} />
-            {tab.label}
-          </Link>
-        ))}
-      </nav>
+      {kind === "lock" ? null : (
+        <nav className="tabbar" aria-label="Student">
+          {TABS.map((tab) => (
+            <Link
+              key={tab.id}
+              href={tab.href}
+              className={active === tab.id ? "on" : undefined}
+              aria-current={active === tab.id ? "page" : undefined}
+            >
+              <TabIcon id={tab.id} />
+              {tab.label}
+            </Link>
+          ))}
+        </nav>
       )}
     </>
   );

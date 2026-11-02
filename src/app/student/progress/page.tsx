@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { getJson } from "@/lib/api-client";
+import { shortWhen } from "@/lib/student-format";
 import type { ProgressReport } from "@/lib/types";
 
 export default function ProgressPage() {
@@ -19,12 +20,16 @@ export default function ProgressPage() {
   }, []);
 
   if (!report) return <p className="meta">{note}</p>;
+  const names = report.topics.map((topic) => topic.topic);
+  const shared = new Set(names.filter((name, index) => names.indexOf(name) !== index));
 
   return (
     <>
       <h1>Progress</h1>
       <p className="meta" style={{ margin: "4px 0 18px" }}>
-        Based on {report.testsTaken} test{report.testsTaken === 1 ? "" : "s"}. One score is a signal, not a measure of ability.
+        {report.testsTaken === 0
+          ? "Take a test and the scores will show up here. One score is a signal, not a measure of ability."
+          : `Based on ${report.testsTaken} ${report.testsTaken === 1 ? "test" : "tests"}. One score is a signal, not a measure of ability.`}
       </p>
       <div className="two" style={{ marginBottom: 14 }}>
         <div className="card">
@@ -42,7 +47,7 @@ export default function ProgressPage() {
         {report.topics.map((topic) => (
           <div key={`${topic.course}-${topic.topic}`}>
             <div className="row">
-              <span>{topic.topic}</span>
+              <span>{shared.has(topic.topic) ? `${topic.topic} · ${topic.course}` : topic.topic}</span>
               <span className="meta">{topic.percent}%</span>
             </div>
             <div className="bar">
@@ -55,7 +60,11 @@ export default function ProgressPage() {
       <section className="card list">
         {report.weakTopics.length === 0 ? <p>No topic is under 60% yet.</p> : null}
         {report.weakTopics.map((topic) => (
-          <Link className="row lnk" key={`${topic.course}-${topic.topic}`} href={topic.tutorId ? `/student/tutor/${topic.tutorId}` : "/student/tutors"}>
+          <Link
+            className="row lnk"
+            key={`${topic.course}-${topic.topic}`}
+            href={topic.tutorId ? `/student/tutor/${topic.tutorId}` : "/student/tutors"}
+          >
             <span>
               <b>
                 {topic.topic} · {topic.percent}%
@@ -69,12 +78,13 @@ export default function ProgressPage() {
       </section>
       <h2>Test history</h2>
       <section className="card list">
+        {report.history.length === 0 ? <p>No tests yet.</p> : null}
         {report.history.map((test) => (
           <Link className="row lnk" key={test.id} href={`/student/tests/${test.id}/results`}>
             <span>
               <b>{test.course}</b>
               <br />
-              <span className="meta">{test.submittedAt?.slice(0, 10)}</span>
+              <span className="meta">{shortWhen(test.submittedAt ?? test.createdAt)}</span>
             </span>
             <b>
               {test.score}/{test.total}

@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
 import { getJson, postJson, sendJson } from "@/lib/api-client";
@@ -35,8 +34,16 @@ function TutorForm() {
   const [level, setLevel] = useState<LearningLevel>("intermediate");
   const [explanationStyle, setExplanationStyle] = useState<ExplanationStyle>("step_by_step");
   const [goals, setGoals] = useState<LearningGoal[]>(["understand_basics"]);
+  const [atCap, setAtCap] = useState(false);
   const [note, setNote] = useState("");
   const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    if (editId) return;
+    getJson<{ remaining: number }>("/api/tutors")
+      .then((data) => setAtCap(data.remaining <= 0))
+      .catch(() => undefined);
+  }, [editId]);
 
   useEffect(() => {
     if (!editId) return;
@@ -53,11 +60,16 @@ function TutorForm() {
   }, [editId]);
 
   function toggleGoal(goal: LearningGoal) {
-    setGoals((current) => (current.includes(goal) ? current.filter((item) => item !== goal) : [...current, goal]));
+    setGoals((current) => {
+      if (current.includes(goal)) return current.filter((item) => item !== goal);
+      if (current.length >= 4) return current;
+      return [...current, goal];
+    });
   }
 
   async function onSubmit(event: React.FormEvent) {
     event.preventDefault();
+    if (atCap && !editId) return;
     setBusy(true);
     setNote("");
     const body = { name, course, focus, level, explanationStyle, goals };
@@ -74,31 +86,58 @@ function TutorForm() {
 
   return (
     <>
-      <Link className="back" href="/student/tutors">
-        ← My tutors
-      </Link>
-      <h1 style={{ marginTop: 12 }}>{editId ? "Edit tutor" : "Create a tutor"}</h1>
+      <h1>{editId ? "Edit tutor" : "Create a tutor"}</h1>
       <p className="meta" style={{ margin: "4px 0 18px" }}>
-        Tell us what you want to learn. This saves a tutor config. It does not train a model.
+        Tell us what you want to learn. You can change this later.
       </p>
+      {atCap && !editId ? (
+        <p className="note">You already have 8 tutors. Delete one to add another.</p>
+      ) : null}
       <form className="card" onSubmit={onSubmit}>
         <div className="field">
           <label htmlFor="n">Tutor name</label>
-          <input id="n" value={name} onChange={(event) => setName(event.target.value)} required />
+          <input
+            id="n"
+            value={name}
+            maxLength={80}
+            placeholder="Statistics Coach"
+            onChange={(event) => setName(event.target.value)}
+            required
+          />
         </div>
         <div className="field">
           <label htmlFor="c">Course or subject</label>
-          <input id="c" value={course} onChange={(event) => setCourse(event.target.value)} required />
+          <input
+            id="c"
+            value={course}
+            maxLength={120}
+            placeholder="STA 201 · Probability"
+            onChange={(event) => setCourse(event.target.value)}
+            required
+          />
         </div>
         <div className="field">
           <label htmlFor="w">What do you want to learn?</label>
-          <textarea id="w" rows={3} value={focus} onChange={(event) => setFocus(event.target.value)} required />
+          <textarea
+            id="w"
+            rows={3}
+            maxLength={500}
+            placeholder="Conditional probability and Bayes' theorem before my midterm."
+            value={focus}
+            onChange={(event) => setFocus(event.target.value)}
+            required
+          />
         </div>
         <div className="field">
           <label>Learning level</label>
           <div className="chips">
             {LEVELS.map((item) => (
-              <button key={item.id} className={level === item.id ? "chip on" : "chip"} type="button" onClick={() => setLevel(item.id)}>
+              <button
+                key={item.id}
+                className={level === item.id ? "chip on" : "chip"}
+                type="button"
+                onClick={() => setLevel(item.id)}
+              >
                 {item.label}
               </button>
             ))}
@@ -123,17 +162,32 @@ function TutorForm() {
           <label>Learning goals</label>
           <div className="chips">
             {GOALS.map((item) => (
-              <button key={item.id} className={goals.includes(item.id) ? "chip on" : "chip"} type="button" onClick={() => toggleGoal(item.id)}>
+              <button
+                key={item.id}
+                className={goals.includes(item.id) ? "chip on" : "chip"}
+                type="button"
+                aria-pressed={goals.includes(item.id)}
+                onClick={() => toggleGoal(item.id)}
+              >
                 {item.label}
               </button>
             ))}
           </div>
         </div>
-        <p className="note">Uploading notes into the tutor is a later version. Preferences cannot override Knowva&apos;s tutoring rules.</p>
-        <button className="btn btn-primary btn-block" type="submit" disabled={busy}>
-          {busy ? "Saving" : editId ? "Save tutor" : "Create tutor"}
+        <details className="more">
+          <summary>More options later</summary>
+          <p className="meta">
+            Uploading your own notes and PDFs is coming in a later version. Saving a tutor stores a config. It does not train a model.
+          </p>
+        </details>
+        <button className="btn btn-primary btn-block" style={{ marginTop: 8 }} type="submit" disabled={busy || (atCap && !editId)}>
+          {busy ? "Saving the tutor" : editId ? "Save tutor" : "Create tutor"}
         </button>
-        {note ? <p className="meta" style={{ marginTop: 8 }}>{note}</p> : null}
+        {note ? (
+          <p className="meta" role="alert" style={{ marginTop: 8 }}>
+            {note}
+          </p>
+        ) : null}
       </form>
     </>
   );

@@ -1,9 +1,9 @@
 "use client";
 
-import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { getJson, postJson } from "@/lib/api-client";
+import { withLetter } from "@/lib/student-format";
 import type { TestPaper, TestResult } from "@/lib/types";
 
 export default function TestTakePage() {
@@ -29,7 +29,7 @@ export default function TestTakePage() {
   }, [params.id, router]);
 
   async function finish() {
-    if (!paper) return;
+    if (!paper || busy) return;
     setBusy(true);
     try {
       await postJson<{ result: TestResult }>(`/api/tests/${paper.id}/submit`, { answers });
@@ -44,6 +44,7 @@ export default function TestTakePage() {
   const question = paper.questions[index];
   if (!question) return <p className="meta">This test has no questions.</p>;
   const picked = answers[index] ?? -1;
+  const blanks = answers.some((value) => value < 0);
 
   return (
     <>
@@ -53,23 +54,21 @@ export default function TestTakePage() {
         </b>
         <span className="meta">{question.topic}</span>
       </div>
-      <div className="bar" style={{ margin: "8px 0 18px" }}>
+      <div className="bar" style={{ margin: "8px 0 18px" }} aria-hidden="true">
         <i style={{ width: `${((index + 1) / paper.questions.length) * 100}%` }} />
       </div>
       <section className="card">
-        <p>{question.prompt}</p>
+        <h2>{question.prompt}</h2>
         <div className="opts">
           {question.options.map((option, optionIndex) => (
-            <label className={picked === optionIndex ? "opt on" : "opt"} key={option}>
+            <label className={picked === optionIndex ? "opt on" : "opt"} key={`${question.id}-${optionIndex}`}>
               <input
                 type="radio"
-                name="q"
+                name={`q-${index}`}
                 checked={picked === optionIndex}
-                onChange={() =>
-                  setAnswers((current) => current.map((value, item) => (item === index ? optionIndex : value)))
-                }
+                onChange={() => setAnswers((current) => current.map((value, item) => (item === index ? optionIndex : value)))}
               />
-              {option}
+              {withLetter(option, optionIndex)}
             </label>
           ))}
         </div>
@@ -88,18 +87,27 @@ export default function TestTakePage() {
           </button>
         )}
       </div>
+      {blanks ? (
+        <p className="meta" style={{ textAlign: "center", marginTop: 12 }}>
+          Unanswered questions are left blank.
+        </p>
+      ) : null}
       <p className="meta" style={{ textAlign: "center", marginTop: 18 }}>
         Leaving now ends the test.{" "}
-        <button type="button" onClick={() => void finish()} style={{ background: "none", border: 0, color: "var(--kn-ink)", font: "inherit", textDecoration: "underline", cursor: "pointer" }}>
+        <button
+          type="button"
+          onClick={() => void finish()}
+          disabled={busy}
+          style={{ background: "none", border: 0, color: "var(--kn-ink)", font: "inherit", textDecoration: "underline", cursor: "pointer" }}
+        >
           Submit test
         </button>
       </p>
-      <p className="meta" style={{ textAlign: "center" }}>
-        <Link href="/student/tests" onClick={(event) => { event.preventDefault(); void finish(); }}>
-          Back to Test Centre
-        </Link>
-      </p>
-      {note ? <p className="meta">{note}</p> : null}
+      {note ? (
+        <p className="meta" role="alert">
+          {note}
+        </p>
+      ) : null}
     </>
   );
 }
