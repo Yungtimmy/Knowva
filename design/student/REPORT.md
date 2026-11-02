@@ -12,3 +12,8 @@ Unslop passes (direction by Tebas, method credit: unslop by @heydamir)
 8. Visuals: signature cloud mascot on every card.
 9. Motion: 3px lift on hover only; buttons press down, never grow. Single orange CTA (Continue lesson).
 Previous version kept as dashboard.prev.html.
+
+## PRD v1 update (2 Nov 2026)
+New: create-tutor, tutors, learn, test-centre, test-take, test-results, progress (.html, screens/*.png). Tabbar is now Home · Tutors · Learn · Tests · Progress on every page. The dashboard CTA links to create-tutor. quiz.html is labelled Practice.
+Suggested routes: /student/tutors, /student/tutors/new, /student/learn, /student/tests, /student/tests/[id], /student/tests/[id]/results, /student/progress.
+Test take: hide the tabbar and lock the tutor chat. Back/leave ends the test.
