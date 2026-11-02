@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "typecheck": "tsc --noEmit",
-    "check:rules": "node --experimental-strip-types scripts/check-rules.ts"
+    "check:rules": "node --import ./scripts/resolve-ts.mjs --experimental-strip-types scripts/check-rules.ts"
   },
   "dependencies": {
     "@ai-sdk/openai": "^4.0.106",

@@ -1,7 +1,11 @@
+"use client";
+
 import Link from "next/link";
+import { useEffect, useState } from "react";
 import { Mascot, mascotFor } from "@/components/Mascot";
-import { DEMO_DATE_SHORT, tutorTitle, tutors } from "@/lib/demo";
-import type { TutorStatus } from "@/lib/types";
+import { getJson } from "@/lib/api-client";
+import { DEMO_DATE_SHORT, tutorTitle, tutors as sampleTutors } from "@/lib/demo";
+import type { Tutor, TutorCard, TutorStatus } from "@/lib/types";
 
 const STATUS_CLASS: Record<TutorStatus, string> = {
   in_lesson: "s-lesson",
@@ -15,7 +19,33 @@ const STATUS_LABEL: Record<TutorStatus, string> = {
   ready: "Ready",
 };
 
+function savedCard(tutor: Tutor): TutorCard {
+  const updated = new Date(tutor.updatedAt);
+  const updatedAt = Number.isNaN(updated.getTime())
+    ? "Now"
+    : updated.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
+  return {
+    id: tutor.id,
+    name: tutor.name,
+    subject: tutor.course,
+    level: tutor.level,
+    topic: tutor.focus,
+    status: "ready",
+    preview: tutor.focus,
+    updatedAt,
+  };
+}
+
 export default function StudentHomePage() {
+  const [cards, setCards] = useState<TutorCard[]>(sampleTutors);
+  useEffect(() => {
+    getJson<{ tutors: Tutor[] }>("/api/tutors")
+      .then((data) => {
+        if (data.tutors.length > 0) setCards(data.tutors.map(savedCard));
+      })
+      .catch(() => undefined);
+  }, []);
+
   return (
     <>
       <section className="hello">
@@ -25,7 +55,7 @@ export default function StudentHomePage() {
       </section>
       <div className="dash-grid">
         <section className="stack" aria-label="Your tutors">
-          {tutors.map((tutor, index) => {
+          {cards.map((tutor, index) => {
             const face = mascotFor(tutor.subject);
             const href = `/student/tutor/${tutor.id}`;
             return (
@@ -40,7 +70,7 @@ export default function StudentHomePage() {
                     <Mascot variant={face.variant} smile={face.smile} />
                   </div>
                   <div className="tc-id">
-                    <h3>{tutorTitle(tutor.subject)}</h3>
+                    <h3>{tutor.name ?? tutorTitle(tutor.subject)}</h3>
                     <p className="meta">
                       {tutor.level} · {tutor.topic}
                     </p>
@@ -71,8 +101,8 @@ export default function StudentHomePage() {
               </article>
             );
           })}
-          <Link className="add-tutor" href="/student/tutor">
-            + Add a subject tutor
+          <Link className="add-tutor" href="/student/tutors/new">
+            + Create a tutor
           </Link>
         </section>
         <aside className="aside">

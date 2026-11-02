@@ -1,5 +1,141 @@
 export type Role = "student" | "teacher";
 
+/** Saved tutors per student. Creating a tutor stores a config. It does not train a model. */
+export const TUTOR_CAP = 8;
+
+export type ExplanationStyle = "step_by_step" | "example_first" | "concise";
+
+export type LearningLevel = "beginner" | "intermediate" | "advanced";
+
+export type LearningGoal = "pass_exam" | "understand_basics" | "practise_problems" | "revise_fast";
+
+/** A course tutor is a saved system-prompt template plus preferences. */
+export type Tutor = {
+  id: string;
+  name: string;
+  course: string;
+  /** "What do you want to learn?" Student preference text. Not a system override. */
+  focus: string;
+  level: LearningLevel;
+  explanationStyle: ExplanationStyle;
+  goals: LearningGoal[];
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type ResourcePreference = "video" | "pdf" | "course" | "mixed";
+
+export type ResourceType = "youtube" | "pdf" | "course" | "notes" | "practice";
+
+export type ResourceConfidence = "high" | "med" | "low";
+
+/** `verified` is true only after a server reachability check succeeded. */
+export type ResourceItem = {
+  title: string;
+  type: ResourceType;
+  url: string | null;
+  searchQuery: string;
+  why: string;
+  confidence: ResourceConfidence;
+  verified: boolean;
+  role: "primary" | "alternate";
+  source: string;
+};
+
+export type ResourceBundle = {
+  subject: string;
+  topic: string;
+  preference: ResourcePreference;
+  level: string;
+  weakTopic: string | null;
+  primary: ResourceItem[];
+  alternates: ResourceItem[];
+};
+
+export type TestDifficulty = "easy" | "medium" | "hard";
+
+/** Sent before submit. No answer key and no explanation. */
+export type PublicQuestion = {
+  id: string;
+  prompt: string;
+  options: string[];
+  topic: string;
+};
+
+export type TopicBreakdown = {
+  topic: string;
+  correct: number;
+  total: number;
+  percent: number;
+};
+
+export type GradedItem = {
+  questionId: string;
+  prompt: string;
+  options: string[];
+  topic: string;
+  selectedIndex: number | null;
+  answerIndex: number;
+  correct: boolean;
+  explanation: string;
+};
+
+export type TestSummary = {
+  id: string;
+  course: string;
+  status: "open" | "submitted";
+  questionCount: number;
+  difficulty: TestDifficulty;
+  topics: string[];
+  score: number | null;
+  total: number | null;
+  createdAt: string;
+  submittedAt: string | null;
+};
+
+export type TestPaper = TestSummary & {
+  questions: PublicQuestion[];
+};
+
+export type TestResult = {
+  id: string;
+  course: string;
+  score: number;
+  total: number;
+  correct: number;
+  incorrect: number;
+  percent: number;
+  topicBreakdown: TopicBreakdown[];
+  weakTopics: TopicBreakdown[];
+  items: GradedItem[];
+  recommendations: Recommendation[];
+  resources: ResourceBundle | null;
+  submittedAt: string;
+  tutorId: string | null;
+};
+
+export type ProgressTopic = {
+  topic: string;
+  course: string;
+  percent: number;
+  correct: number;
+  total: number;
+};
+
+export type ProgressReport = {
+  testsTaken: number;
+  averagePercent: number | null;
+  topics: ProgressTopic[];
+  weakTopics: {
+    topic: string;
+    course: string;
+    percent: number;
+    tutorId: string | null;
+    tutorName: string | null;
+  }[];
+  history: TestSummary[];
+};
+
 export type Subject = {
   name: string;
   topics: { name: string; progress: number }[];
@@ -11,6 +147,8 @@ export type TutorMessage = {
   short: string;
   steps: string[];
   remember: string;
+  /** One next step or check question. Tutor turns only. */
+  next?: string;
 };
 
 export type Question = {
@@ -32,6 +170,9 @@ export type StudyPack = {
   summary: string[];
   flashcards: { q: string; a: string }[];
   questions: Question[];
+  /** Section C outline. Present on packs from the materials API. */
+  outline?: string[];
+  keyTerms?: { term: string; meaning: string }[];
 };
 
 /** `missed` holds indexes into the quiz's question list. `total` is the question count. */
@@ -53,6 +194,8 @@ export type TutorCard = {
   status: TutorStatus;
   preview: string;
   updatedAt: string;
+  /** Set when the card is a saved tutor rather than a sample desk card. */
+  name?: string;
 };
 
 export type TeacherClass = {

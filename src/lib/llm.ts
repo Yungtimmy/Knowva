@@ -12,8 +12,16 @@ const INSTRUCTIONS = [
 ].join(" ");
 
 export function llmApiKey() {
+  const groq = process.env.GROQ_API_KEY?.trim();
+  if (groq) return groq;
   const key = process.env.OPENAI_API_KEY || process.env.LLM_API_KEY;
   return key?.trim() || undefined;
+}
+
+export function llmProvider(): "groq" | "openai" | "none" {
+  if (process.env.GROQ_API_KEY?.trim()) return "groq";
+  if (process.env.OPENAI_API_KEY?.trim() || process.env.LLM_API_KEY?.trim()) return "openai";
+  return "none";
 }
 
 export function llmConfigured() {
@@ -21,23 +29,54 @@ export function llmConfigured() {
 }
 
 function chatModel() {
+  const provider = llmProvider();
+  const baseURL =
+    process.env.LLM_BASE_URL?.trim() ||
+    (provider === "groq" ? "https://api.groq.com/openai/v1" : process.env.OPENAI_BASE_URL?.trim() || undefined);
+  const model =
+    process.env.LLM_MODEL?.trim() || (provider === "groq" ? "openai/gpt-oss-20b" : "gpt-4o-mini");
   const openai = createOpenAI({
     apiKey: llmApiKey(),
-    baseURL: process.env.LLM_BASE_URL || process.env.OPENAI_BASE_URL || undefined,
+    baseURL,
   });
-  // .chat() uses Chat Completions, which OpenAI-compatible base URLs usually implement.
-  return openai.chat(process.env.LLM_MODEL || "gpt-4o-mini");
+  // .chat() uses Chat Completions, which Groq and other OpenAI-compatible base URLs implement.
+  return openai.chat(model);
 }
 
-export async function generateStructured<T>(schema: z.ZodType<T>, prompt: string): Promise<T> {
+export async function generateStructured<T>(schema: z.ZodType<T>, prompt: string, instructions?: string): Promise<T> {
+  const system = instructions ?? INSTRUCTIONS;
+  try {
+    const result = await generateText({
+      model: chatModel(),
+      instructions: system,
+      prompt,
+      output: Output.object({ schema }),
+    });
+    if (result.output != null) return result.output;
+  } catch {
+    // Some Groq models reject json_schema. Fall through to a JSON parse.
+  }
+
   const result = await generateText({
     model: chatModel(),
-    instructions: INSTRUCTIONS,
+    instructions: `${system}\nReply with one JSON object and no markdown. Use only the keys the schema asks for.`,
     prompt,
-    output: Output.object({ schema }),
   });
-  if (result.output == null) {
-    throw new Error("The model returned no structured answer.");
+  const text = result.text.trim();
+  const start = text.indexOf("{");
+  const end = text.lastIndexOf("}");
+  if (start < 0 || end <= start) throw new Error("The model returned no structured answer.");
+  const parsed = JSON.parse(text.slice(start, end + 1)) as unknown;
+  try {
+    return schema.parse(parsed);
+  } catch (error) {
+    if (!parsed || typeof parsed !== "object") throw error;
+    const row = parsed as Record<string, unknown>;
+    return schema.parse({
+      ...row,
+      short: row.short ?? row.explanation,
+      remember: row.remember ?? row.memory,
+      next: row.next ?? row.next_step ?? row.nextStep,
+    });
   }
-  return result.output;
 }
