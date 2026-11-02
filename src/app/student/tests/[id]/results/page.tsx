@@ -3,8 +3,18 @@
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
+import { ResourceCards } from "@/components/student/ResourceCards";
 import { getJson } from "@/lib/api-client";
-import type { TestResult } from "@/lib/types";
+import { OPTION_LETTERS, questionTag, shortWhen } from "@/lib/student-format";
+import type { GradedItem, TestResult } from "@/lib/types";
+
+function choiceLine(item: GradedItem, index: number) {
+  const tag = questionTag(item.questionId, index);
+  if (item.correct) return `${tag} · Correct`;
+  if (item.selectedIndex === null || item.selectedIndex < 0) return `${tag} · Incorrect · left blank`;
+  const letter = OPTION_LETTERS[item.selectedIndex];
+  return letter ? `${tag} · Incorrect · you chose ${letter}` : `${tag} · Incorrect`;
+}
 
 export default function TestResultsPage() {
   const params = useParams<{ id: string }>();
@@ -21,16 +31,15 @@ export default function TestResultsPage() {
   }, [params.id]);
 
   if (!result) return <p className="meta">{note}</p>;
-  const wrong = result.items.filter((item) => !item.correct).slice(0, 4);
-  const right = result.items.filter((item) => item.correct).slice(0, 2);
+  const ordered = result.items
+    .map((item, index) => ({ item, index }))
+    .sort((a, b) => Number(a.item.correct) - Number(b.item.correct));
+  const resources = result.resources ? [...result.resources.primary, ...result.resources.alternates] : [];
 
   return (
     <>
-      <Link className="back" href="/student/tests">
-        ← Test Centre
-      </Link>
-      <p className="meta" style={{ marginTop: 12 }}>
-        {result.course}
+      <p className="meta">
+        {result.course} · {shortWhen(result.submittedAt)}
       </p>
       <h1>
         You scored {result.score}/{result.total}
@@ -64,12 +73,9 @@ export default function TestResultsPage() {
       </section>
       <h2>Explanations</h2>
       <section className="card list">
-        {[...wrong, ...right].map((item) => (
+        {ordered.map(({ item, index }) => (
           <div key={item.questionId}>
-            <b>
-              {item.questionId} · {item.correct ? "Correct" : "Incorrect"}
-              {item.selectedIndex !== null && !item.correct ? ` · you chose ${item.options[item.selectedIndex]}` : ""}
-            </b>
+            <p className="meta">{choiceLine(item, index)}</p>
             <p>{item.explanation}</p>
           </div>
         ))}
@@ -87,6 +93,12 @@ export default function TestResultsPage() {
           </Link>
         ))}
       </section>
+      {resources.length > 0 ? (
+        <>
+          <h2>Resources</h2>
+          <ResourceCards items={resources} />
+        </>
+      ) : null}
     </>
   );
 }

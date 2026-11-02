@@ -2,32 +2,59 @@
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
-import { postJson } from "@/lib/api-client";
+import { ResourceCards } from "@/components/student/ResourceCards";
+import { ApiError, postJson } from "@/lib/api-client";
 import { demoTutorReply } from "@/lib/demo";
+import { levelLabel } from "@/lib/student-format";
 import type { ResourceBundle, TutorCard, TutorMessage } from "@/lib/types";
 
 type Reply = { demo?: boolean; message: TutorMessage; resources?: ResourceBundle | null };
 
-const LEVELS = ["SS1", "SS2", "SS3"];
+const SCHOOL_LEVELS = [
+  { id: "SS1", label: "SS1" },
+  { id: "SS2", label: "SS2" },
+  { id: "SS3", label: "SS3" },
+];
+
+const LEARNING_LEVELS = [
+  { id: "beginner", label: "Beginner" },
+  { id: "intermediate", label: "Intermediate" },
+  { id: "advanced", label: "Advanced" },
+];
+
 const SUBJECTS = ["Biology", "Mathematics", "Physics", "English"];
 
 export function TutorDesk({ tutor, persistedId }: { tutor?: TutorCard; persistedId?: string }) {
+  const lockedCourse = Boolean(persistedId);
   const [level, setLevel] = useState(tutor?.level ?? "SS2");
   const [subject, setSubject] = useState(tutor?.subject ?? "Biology");
   const [topic, setTopic] = useState(tutor?.topic ?? "Photosynthesis");
   const [draft, setDraft] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const [locked, setLocked] = useState(false);
   const [demo, setDemo] = useState(false);
+  const [modeUsed, setModeUsed] = useState<string>("");
   const [resources, setResources] = useState<ResourceBundle | null>(null);
-  const opening = useMemo(() => openingThread(tutor), [tutor]);
+  const opening = useMemo(() => openingThread(tutor, lockedCourse), [tutor, lockedCourse]);
   const [messages, setMessages] = useState<TutorMessage[]>(opening);
+  const levels = lockedCourse ? LEARNING_LEVELS : SCHOOL_LEVELS;
+  const subjects = lockedCourse ? [subject] : Array.from(new Set([subject, ...SUBJECTS]));
+  const practice = practiceTarget(subject, topic, persistedId);
+  let latestIndex = -1;
+  for (let index = messages.length - 1; index >= 0; index -= 1) {
+    if (messages[index]?.role === "tutor") {
+      latestIndex = index;
+      break;
+    }
+  }
 
   async function ask(message: string, mode?: "explain" | "simpler" | "example" | "diagram") {
     const text = message.trim();
-    if (text.length < 2) return;
+    if (text.length < 2 || busy || locked) return;
     setError("");
     setBusy(true);
+    setModeUsed(mode ?? "");
     setMessages((current) => [...current, { role: "user", short: text, steps: [], remember: "" }]);
     setDraft("");
     try {
@@ -43,41 +70,60 @@ export function TutorDesk({ tutor, persistedId }: { tutor?: TutorCard; persisted
       setResources(data.resources ?? null);
       setMessages((current) => [...current, data.message]);
     } catch (caught) {
-      const fallback = demoTutorReply({ subject, topic, message: text, mode });
-      setMessages((current) => [...current, fallback]);
-      setError(caught instanceof Error ? caught.message : "The tutor paused. Here is a practice reply.");
+      if (caught instanceof ApiError && caught.status === 423) {
+        setLocked(true);
+        setError(caught.message);
+        return;
+      }
+      if (caught instanceof ApiError && (caught.status === 400 || caught.status === 404)) {
+        setError(caught.message);
+        return;
+      }
+      setMessages((current) => [...current, demoTutorReply({ subject, topic, message: text, mode })]);
+      setDemo(true);
     } finally {
       setBusy(false);
     }
   }
 
-  const latest = [...messages].reverse().find((message) => message.role === "tutor");
-
   return (
     <>
-      <Link className="back" href="/student">
-        ← Home
+      <Link className="back" href={lockedCourse ? "/student/tutors" : "/student"}>
+        {lockedCourse ? "← My tutors" : "← Home"}
       </Link>
+      {tutor?.name ? <h1 style={{ marginTop: 12 }}>{tutor.name}</h1> : null}
       <section className="card" style={{ marginTop: 12 }}>
         <div className="two">
           <div>
             <label htmlFor="level">Level</label>
-            <select id="level" value={level} onChange={(event) => setLevel(event.target.value)}>
-              {LEVELS.map((item) => (
-                <option key={item}>{item}</option>
+            <select id="level" value={level} disabled={lockedCourse} onChange={(event) => setLevel(event.target.value)}>
+              {levels.map((item) => (
+                <option key={item.id} value={item.id}>
+                  {item.label}
+                </option>
               ))}
             </select>
           </div>
           <div>
             <label htmlFor="subject">Subject</label>
-            <select id="subject" value={subject} disabled={Boolean(persistedId)} onChange={(event) => setSubject(event.target.value)}>
-              {persistedId ? <option>{subject}</option> : null}
-              {SUBJECTS.map((item) => (
-                <option key={item}>{item}</option>
-              ))}
-            </select>
+            {lockedCourse ? (
+              <p id="subject" style={{ margin: "8px 0 0", color: "var(--kn-ink)", fontWeight: 500 }}>
+                {subject}
+              </p>
+            ) : (
+              <select id="subject" value={subject} onChange={(event) => setSubject(event.target.value)}>
+                {subjects.map((item) => (
+                  <option key={item}>{item}</option>
+                ))}
+              </select>
+            )}
           </div>
         </div>
+        {lockedCourse ? (
+          <p className="meta" style={{ marginTop: 8 }}>
+            {levelLabel(level)} · this tutor stays on {subject}.
+          </p>
+        ) : null}
         <label htmlFor="topic" style={{ marginTop: 10 }}>
           Topic
         </label>
@@ -108,13 +154,7 @@ export function TutorDesk({ tutor, persistedId }: { tutor?: TutorCard; persisted
               </div>
             ) : (
               <div key={`${message.role}-${index}`} style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
-                <svg width="40" height="32" viewBox="0 0 110 90" aria-hidden="true">
-                  <path d="M20 70C2 70 0 48 14 42 8 24 30 14 40 24 46 6 72 8 74 24 92 18 106 34 96 48 110 58 98 78 82 72 74 86 50 84 46 74 36 82 22 80 20 70Z" fill="#2412B0" />
-                  <ellipse cx="46" cy="40" rx="7" ry="10" fill="#fff" />
-                  <ellipse cx="62" cy="40" rx="7" ry="10" fill="#fff" />
-                  <circle cx="49" cy="42" r="4" />
-                  <circle cx="65" cy="42" r="4" />
-                </svg>
+                <TutorFace />
                 <div className="bubble" style={{ flex: 1 }}>
                   <h3 style={{ marginBottom: 6 }}>Short answer</h3>
                   <p>{message.short}</p>
@@ -140,52 +180,60 @@ export function TutorDesk({ tutor, persistedId }: { tutor?: TutorCard; persisted
                       <p>{message.next}</p>
                     </>
                   ) : null}
+                  {index === latestIndex ? (
+                    <div className="chips" style={{ marginTop: 12 }}>
+                      <button
+                        className={modeUsed === "simpler" ? "chip on" : "chip"}
+                        type="button"
+                        disabled={busy || locked}
+                        onClick={() => ask(`Explain ${topic} more simply`, "simpler")}
+                      >
+                        Ask simpler
+                      </button>
+                      <button
+                        className={modeUsed === "example" ? "chip on" : "chip"}
+                        type="button"
+                        disabled={busy || locked}
+                        onClick={() => ask(`Give an example of ${topic}`, "example")}
+                      >
+                        Give an example
+                      </button>
+                      <button
+                        className={modeUsed === "diagram" ? "chip on" : "chip"}
+                        type="button"
+                        disabled={busy || locked}
+                        onClick={() => ask(`Explain a diagram of ${topic}`, "diagram")}
+                      >
+                        Explain the diagram
+                      </button>
+                    </div>
+                  ) : null}
                 </div>
               </div>
             ),
           )}
-          {latest ? (
-            <div className="chips">
-              <button className="chip" type="button" disabled={busy} onClick={() => ask(`Explain ${topic} more simply`, "simpler")}>
-                Ask simpler
-              </button>
-              <button className="chip" type="button" disabled={busy} onClick={() => ask(`Give an example of ${topic}`, "example")}>
-                Give an example
-              </button>
-              <button className="chip" type="button" disabled={busy} onClick={() => ask(`Explain a diagram of ${topic}`, "diagram")}>
-                Explain the diagram
-              </button>
-            </div>
-          ) : null}
           <div className="card" style={{ margin: 0, background: "var(--kn-cream)" }}>
             <h3>Check yourself</h3>
             <p className="meta" style={{ marginBottom: 10 }}>
-              3 quick questions on this answer
+              {practice.note}
             </p>
-            <Link className="btn btn-primary btn-block" href={practiceHref(subject, topic)}>
-              Start practice
+            <Link className="btn btn-primary btn-block" href={practice.href}>
+              {practice.label}
             </Link>
           </div>
-          {demo ? <p className="meta">Demo answer. Add GROQ_API_KEY to use the model.</p> : null}
           {resources ? (
-            <div className="card" style={{ margin: 0 }}>
-              <h3>Resources</h3>
-              {[...resources.primary, ...resources.alternates].map((item) => (
-                <p key={`${item.role}-${item.title}`} className="meta">
-                  <span className="type">{item.type}</span> {item.title}
-                  {item.verified && item.url ? (
-                    <>
-                      {" "}
-                      <a href={item.url}>Open</a> <span className="ok">Checked link</span>
-                    </>
-                  ) : (
-                    <> · {item.searchQuery}</>
-                  )}
-                </p>
-              ))}
+            <div>
+              <h3 style={{ marginBottom: 8 }}>Resources</h3>
+              <ResourceCards items={[...resources.primary, ...resources.alternates]} />
             </div>
           ) : null}
-          {error ? <p className="meta">{error}</p> : null}
+          {demo ? <p className="meta">Demo answer. No model key is set, so this stays a practice reply.</p> : null}
+          {locked ? (
+            <p className="note">
+              Tutor chat is locked until you submit the test. <Link href="/student/tests">Open Test Centre</Link>
+            </p>
+          ) : null}
+          {error && !locked ? <p className="meta">{error}</p> : null}
           {busy ? <p className="meta">Writing the explanation.</p> : null}
         </div>
       </section>
@@ -203,8 +251,9 @@ export function TutorDesk({ tutor, persistedId }: { tutor?: TutorCard; persisted
           placeholder="Ask about this topic"
           style={{ borderRadius: 999, borderColor: "var(--kn-ink)" }}
           aria-label="Ask about this topic"
+          disabled={locked}
         />
-        <button className="btn btn-ghost" style={{ padding: "12px 16px", background: "var(--kn-surface)" }} type="submit" disabled={busy}>
+        <button className="btn btn-ghost" style={{ padding: "12px 16px", background: "var(--kn-surface)" }} type="submit" disabled={busy || locked}>
           Send
         </button>
       </form>
@@ -212,8 +261,20 @@ export function TutorDesk({ tutor, persistedId }: { tutor?: TutorCard; persisted
   );
 }
 
-function openingThread(tutor?: TutorCard): TutorMessage[] {
-  if (!tutor || tutor.subject === "Biology") {
+function TutorFace() {
+  return (
+    <svg width="40" height="32" viewBox="0 0 110 90" aria-hidden="true">
+      <path d="M20 70C2 70 0 48 14 42 8 24 30 14 40 24 46 6 72 8 74 24 92 18 106 34 96 48 110 58 98 78 82 72 74 86 50 84 46 74 36 82 22 80 20 70Z" fill="#2412B0" />
+      <ellipse cx="46" cy="40" rx="7" ry="10" fill="#fff" />
+      <ellipse cx="62" cy="40" rx="7" ry="10" fill="#fff" />
+      <circle cx="49" cy="42" r="4" />
+      <circle cx="65" cy="42" r="4" />
+    </svg>
+  );
+}
+
+function openingThread(tutor: TutorCard | undefined, persisted: boolean): TutorMessage[] {
+  if (!persisted && (!tutor || tutor.id === "biology" || tutor.subject === "Biology")) {
     return [
       { role: "user", short: "Why do plants need light to make food?", steps: [], remember: "" },
       demoTutorReply({
@@ -223,11 +284,23 @@ function openingThread(tutor?: TutorCard): TutorMessage[] {
       }),
     ];
   }
-  return [{ role: "tutor", short: tutor.preview, steps: [], remember: "" }];
+  if (tutor?.preview) return [{ role: "tutor", short: tutor.preview, steps: [], remember: "" }];
+  return [{ role: "tutor", short: "Ask a question on this course.", steps: [], remember: "" }];
 }
 
-function practiceHref(subject: string, topic: string) {
-  if (/photo/i.test(topic) || subject === "Biology") return "/student/quiz/photosynthesis";
-  if (/quad/i.test(topic) || subject === "Mathematics") return "/student/quiz/quadratics";
-  return "/student/quiz/photosynthesis";
+function practiceTarget(subject: string, topic: string, persistedId?: string) {
+  if (!persistedId && (subject === "Biology" || /photo/i.test(topic))) {
+    return { href: "/student/quiz/photosynthesis", label: "Start practice", note: "3 quick questions on this answer" };
+  }
+  if (!persistedId && (subject === "Mathematics" || /quad/i.test(topic))) {
+    return { href: "/student/quiz/quadratics", label: "Start practice", note: "3 quick questions on this answer" };
+  }
+  const params = new URLSearchParams({ course: subject, count: "5" });
+  if (persistedId) params.set("tutor", persistedId);
+  if (topic) params.set("topic", topic);
+  return {
+    href: `/student/tests?${params.toString()}`,
+    label: "Start test",
+    note: "5 questions in Test Centre. Tutor chat locks until you submit.",
+  };
 }

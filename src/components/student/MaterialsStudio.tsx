@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState, type FormEvent } from "react";
 import { postJson } from "@/lib/api-client";
 import { readStore, writeStore } from "@/lib/browser-store";
@@ -12,11 +13,20 @@ const STARTER_NOTES =
 
 type Response = { demo?: boolean; pack: StudyPack };
 
-export function MaterialsStudio() {
-  const [subject, setSubject] = useState(cellPack.subject);
-  const [topic, setTopic] = useState(cellPack.topic);
-  const [notes, setNotes] = useState(STARTER_NOTES);
-  const [pack, setPack] = useState<StudyPack>(cellPack);
+const SUBJECTS = ["Biology", "Mathematics", "Physics", "English"];
+
+export function MaterialsStudio({
+  initialSubject,
+  initialTopic,
+}: {
+  initialSubject?: string;
+  initialTopic?: string;
+}) {
+  const custom = Boolean(initialSubject || initialTopic);
+  const [subject, setSubject] = useState(initialSubject || cellPack.subject);
+  const [topic, setTopic] = useState(initialTopic || cellPack.topic);
+  const [notes, setNotes] = useState(custom ? "" : STARTER_NOTES);
+  const [pack, setPack] = useState<StudyPack | null>(custom ? null : cellPack);
   const [busy, setBusy] = useState(false);
   const [note, setNote] = useState("");
   const [pdfNote, setPdfNote] = useState("");
@@ -37,7 +47,7 @@ export function MaterialsStudio() {
       const stored = readStore<Record<string, StudyPack>>("knowva.packs", {});
       stored[data.pack.id] = data.pack;
       writeStore("knowva.packs", stored);
-      setNote(data.demo ? "Demo pack. Add an LLM key to draft from the model." : "Study pack ready.");
+      setNote(data.demo ? "Demo pack. No model key is set, so this draft stays on your notes." : "Study pack ready.");
     } catch (caught) {
       setNote(caught instanceof Error ? caught.message : "Could not make a pack.");
     } finally {
@@ -47,9 +57,9 @@ export function MaterialsStudio() {
 
   return (
     <>
-      <a className="back" href="/student">
+      <Link className="back" href="/student">
         ← Home
-      </a>
+      </Link>
       <section className="row" style={{ margin: "12px 0 14px" }}>
         <div>
           <h1>Turn notes into a study pack</h1>
@@ -65,15 +75,20 @@ export function MaterialsStudio() {
       </section>
       <form className="card" onSubmit={onSubmit}>
         <label>Subject and topic</label>
-        <div className="two" style={{ marginBottom: 10 }}>
-          <select value={subject} onChange={(event) => setSubject(event.target.value)} aria-label="Subject">
-            <option>Biology</option>
-            <option>Mathematics</option>
-            <option>Physics</option>
-            <option>English</option>
-          </select>
+        <div className="fields" style={{ marginBottom: 10 }}>
+          <input
+            value={subject}
+            list="pack-subjects"
+            aria-label="Subject"
+            onChange={(event) => setSubject(event.target.value)}
+          />
           <input value={topic} onChange={(event) => setTopic(event.target.value)} aria-label="Topic" />
         </div>
+        <datalist id="pack-subjects">
+          {SUBJECTS.map((item) => (
+            <option key={item} value={item} />
+          ))}
+        </datalist>
         <label htmlFor="notes">Your notes</label>
         <textarea id="notes" rows={5} value={notes} onChange={(event) => setNotes(event.target.value)} />
         <div className="row" style={{ marginTop: 12 }}>
@@ -110,8 +125,16 @@ export function MaterialsStudio() {
         </button>
         {note ? <p className="meta" style={{ marginTop: 8 }}>{note}</p> : null}
       </form>
-      <h2 style={{ marginTop: 22 }}>Your pack</h2>
-      <PackView pack={pack} />
+      {pack ? (
+        <>
+          <h2 style={{ marginTop: 22 }}>Your pack</h2>
+          <PackView pack={pack} />
+        </>
+      ) : (
+        <p className="meta" style={{ marginTop: 16 }}>
+          Your study pack will show up here.
+        </p>
+      )}
     </>
   );
 }

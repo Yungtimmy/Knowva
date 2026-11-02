@@ -30,6 +30,26 @@ export function PackView({ pack }: { pack: StudyPack }) {
           ))}
         </ul>
       </section>
+      {pack.outline && pack.outline.length > 0 ? (
+        <section className="card">
+          <h3>Outline</h3>
+          <ul style={{ paddingLeft: 18, marginTop: 6 }}>
+            {pack.outline.map((line) => (
+              <li key={line}>{line}</li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
+      {pack.keyTerms && pack.keyTerms.length > 0 ? (
+        <section className="card">
+          <h3>Key terms</h3>
+          {pack.keyTerms.map((item) => (
+            <p key={item.term} style={{ marginTop: 8 }}>
+              <b>{item.term}.</b> {item.meaning}
+            </p>
+          ))}
+        </section>
+      ) : null}
       <section className="card">
         <div className="row">
           <h3>Flashcards</h3>
