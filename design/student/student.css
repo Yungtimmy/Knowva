@@ -70,3 +70,24 @@ label{font-size:13px;font-weight:500;color:var(--kn-ink-3);display:block;margin-
 .mini.col a span{font-size:13px;color:var(--kn-ink-3)}
 .dots{display:flex;gap:4px}.dots i{width:10px;height:10px;border-radius:50%;background:var(--kn-line)}.dots i.on{background:var(--kn-orange)}
 @media(min-width:900px){.app.dash{max-width:960px}.dash-grid{display:grid;grid-template-columns:1fr 300px;gap:32px;align-items:start}.aside{margin-top:0;position:sticky;top:20px}}
+/* ---- PRD v1 student IA ---- */
+.field{margin-bottom:16px}.field .chips{margin-top:4px}
+.more{margin:4px 0 12px;font-size:14px}.more summary{cursor:pointer;font-weight:500;color:var(--kn-ink-2)}
+.trow{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.trow-main{display:flex;gap:12px;align-items:center;text-decoration:none;color:inherit;flex:1;min-width:0}
+.face{width:44px;height:44px;border-radius:14px;border:1.5px solid var(--kn-ink);flex:none}
+.trow-act{display:flex;gap:10px;font-size:13px}.trow-act a,.trow-act button{background:none;border:0;font:500 13px var(--kn-font);color:var(--kn-ink-3);cursor:pointer;text-decoration:underline;text-underline-offset:3px}
+.note{background:var(--kn-orange-soft);border-radius:var(--kn-r-sm);padding:10px 12px;font-size:14px;color:var(--kn-ink);margin-bottom:14px}
+.lnk{text-decoration:none;color:var(--kn-ink)}
+.lock{font-size:13px;font-weight:600;padding:6px 12px;border-radius:99px;border:1.5px solid var(--kn-ink);background:var(--kn-yellow);color:var(--kn-ink)}
+.opts{display:flex;flex-direction:column;gap:10px;margin-top:14px}
+.opt{display:flex;gap:10px;align-items:center;border:1.5px solid var(--kn-line);border-radius:14px;padding:12px 14px;font-size:15px;color:var(--kn-ink);cursor:pointer;margin:0}
+.opt input{width:auto}.opt.on{border-color:var(--kn-orange);background:var(--kn-orange-soft)}
+.btn[disabled]{opacity:.4;cursor:not-allowed}
+.big{font-size:28px;color:var(--kn-ink);font-weight:600}
+.bar i.warn{background:var(--kn-orange)}
+.seg{display:flex;background:var(--kn-surface);border:1.5px solid var(--kn-ink);border-radius:99px;padding:4px;margin:12px 0 16px}
+.seg button{flex:1;border:0;background:none;border-radius:99px;padding:8px;font:600 14px var(--kn-font);color:var(--kn-ink-2);cursor:pointer}.seg button.on{background:var(--kn-ink);color:var(--kn-cream)}
+.type{font-size:12px;font-weight:600;padding:3px 10px;border-radius:99px;border:1.5px solid var(--kn-ink);color:var(--kn-ink)}
+.ok{font-size:12px;font-weight:500;color:var(--kn-blue)}
+.tabbar a{min-width:56px}

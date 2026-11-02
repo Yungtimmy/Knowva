@@ -41,3 +41,7 @@ No gradient text · no scale(1.02) hover · no pure #000/#FFF as only colors · 
 ## Surfaces
 - Student: warmer, mascot-led. Blue cloud accent. Big chat input, quiz cards one-at-a-time, streak/progress on dashboard. Mobile first.
 - Teacher: calmer, denser. Yellow accent, fewer mascots, tables for classes/quizzes, "Generate lesson outline / quiz / marking guide" actions. Desktop first, still responsive.
+
+## Student IA (PRD v1)
+5-tab bar (all student/*.html): Home → dashboard.html · Tutors → tutors.html (+ create-tutor.html, tutor.html) · Learn → learn.html (Discover | Saved; materials.html) · Tests → test-centre.html (+ test-take.html, test-results.html; quiz.html = informal Practice) · Progress → progress.html.
+test-take.html has no tabbar on purpose: tutor chat is locked during a test.
