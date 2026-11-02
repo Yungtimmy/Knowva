@@ -1,0 +1,198 @@
+KNOWVA AI
+Learn Smarter. Grow Further.
+PRODUCT REQUIREMENTS DOCUMENT (PRD)
+Version 1.0  |  Hackathon MVP  |  Target submission: 15 November 2026
+Product note: “Knowva AI” is a proposed working name. Check existing products, domains, and trademarks before adopting it officially.
+1. Product Overview
+1.1 Description
+Knowva AI is an AI-powered educational platform designed to personalize learning for students and support teachers with intelligent educational tools. It combines AI tutoring, interactive learning materials, assessments, and progress tracking in one accessible environment.
+Unlike a conventional chatbot that primarily answers questions, Knowva AI aims to help learners understand concepts, practise what they learn, identify knowledge gaps, and receive appropriate recommendations for improvement.
+1.2 Vision and Mission
+Vision: Create a world where every learner has access to personalized, high-quality education regardless of background, location, or financial circumstances.
+Mission: Use AI to make learning more accessible, engaging, personalized, and effective while equipping teachers with tools that improve educational delivery.
+1.3 Value Proposition
+Transform educational materials into interactive learning experiences, provide personalized tutoring, and use assessment results to recommend suitable next steps.
+2. Problem Statement
+Students may struggle to understand classroom lessons because teaching methods cannot always accommodate individual learning needs. Affordable tutoring and quality learning materials are not equally accessible. Teachers also spend time preparing resources, creating assessments, and identifying learning gaps. General-purpose AI tools can answer questions but do not necessarily provide structured learning or reliably track understanding over time.
+Knowva AI addresses these challenges through guided tutoring, interactive content, assessments, and teacher support.
+3. Target Users
+Primary school pupils: simple explanations, visual examples, and foundational practice.
+Secondary school students: topic explanations, revision, examination preparation, and practice questions.
+University students: support with advanced concepts, lecture notes, and structured revision.
+Teachers and educators: lesson outlines, quizzes, marking guides, and educational resources.
+Initial MVP focus: secondary school students and teachers. The product architecture should allow other educational levels to be added later.
+4. Product Objectives
+Provide an interactive AI tutoring experience.
+Help students understand concepts rather than simply copy answers.
+Convert educational notes into useful learning materials.
+Assess understanding through practice questions and feedback.
+Recommend activities based on demonstrated performance.
+Help teachers prepare educational resources efficiently.
+Deliver a simple, mobile-friendly experience.
+MVP success means users can complete the main learning journey and the core features work reliably. It does not, by itself, prove long-term academic improvement.
+5. Core Features and Requirements
+5.1 AI Personal Tutor — P0 / Essential
+Students select a level, subject, and topic; ask questions by text; receive structured explanations and examples; request simpler explanations; and practise with guided questions. The tutor should encourage attempts and reasoning where appropriate.
+Acceptance criteria: A student can choose a topic, ask a question, receive a relevant explanation, and request a practice question without leaving the tutoring interface.
+5.2 Learning Material Generator — P0 / Essential
+Users paste educational text or provide supported text-based PDFs. The system generates summaries, flashcards, and multiple-choice questions.
+Acceptance criteria: A user can submit supported educational text and generate a readable summary and relevant practice questions. Scanned or handwritten material requires OCR and is not guaranteed unless implemented and tested.
+5.3 Interactive Quiz System — P0 / Essential
+Students answer multiple-choice questions, receive a score, review correct answers, and see explanations. Results should be associated with a subject and topic.
+Acceptance criteria: Quiz scoring matches the answer key, and the student can review incorrect answers with feedback.
+5.4 Personalized Learning Recommendations — P1 / Important
+The system uses topic-level assessment results to suggest review, additional practice, or more challenging exercises. For the MVP, transparent rules-based logic is sufficient; a trained ML model is not required.
+Acceptance criteria: After a quiz, the student receives a recommendation linked to their result. A single quiz score must not be treated as a definitive measure of ability.
+5.5 Teacher Assistant — P1 / Important
+Teachers can generate lesson outlines, lesson notes, quizzes, practice questions, and answer keys. Generated materials remain editable and should be reviewed before classroom use.
+Acceptance criteria: A teacher can choose a subject and topic, generate a lesson outline or quiz, and review the result.
+5.6 User Dashboard — P0 / Essential
+Student dashboard: tutor, subjects, learning materials, quizzes, results, and recommendations. Teacher dashboard: teaching tools, generated resources, and saved materials.
+Acceptance criteria: Users can easily find features relevant to their role on a mobile-friendly dashboard.
+5.7 Voice and Visual Learning — P2 / Future
+Potential enhancements include voice input, spoken responses, diagrams, interactive demonstrations, and animated explanations. Add these after the core workflow is stable.
+6. User Stories
+Student
+As a student, I want an AI explanation of a difficult topic so I can learn at my own pace.
+As a student, I want to turn my notes into practice questions so I can revise effectively.
+As a student, I want feedback on quiz answers so I can understand my mistakes.
+As a student, I want recommendations based on my results so I know what to practise next.
+Teacher
+As a teacher, I want to generate lesson outlines and quizzes to prepare resources more efficiently.
+As a teacher, I want to edit AI-generated content before using it.
+As a teacher, I want class-level performance summaries to identify topics that need more teaching.
+Administrator
+As an administrator, I want appropriate access controls and basic reliability monitoring so the service remains secure and usable.
+7. Main User Journeys
+Student Journey
+Open Knowva AI.
+Choose an educational level, subject, and topic.
+Read an AI explanation and ask follow-up questions.
+Complete a practice quiz.
+Receive a score and explanations.
+Get a recommended next activity.
+Continue learning or revisit the topic.
+Teacher Journey
+Open the teacher dashboard.
+Select a subject and topic.
+Request a lesson outline or quiz.
+Review and edit the generated content.
+Save or export the material using supported functionality.
+8. Functional Requirements
+Provide a responsive web interface and clear navigation.
+Support text-based AI tutoring.
+Generate summaries and quiz questions from submitted text.
+Evaluate supported quiz formats and explain answers.
+Provide basic recommendations based on actual assessment results.
+Offer teacher resource-generation tools.
+Handle invalid inputs, loading states, and failed AI requests gracefully.
+Use authentication and role-based access if saved progress or private teacher/student data is stored.
+Provide a limited demonstration mode if time is short, without exposing private student information.
+9. Non-Functional Requirements
+Usability and Accessibility
+The interface should be easy to navigate, mobile-friendly, readable, and support sufficient contrast and keyboard navigation where practical.
+Performance and Reliability
+Show clear loading feedback, handle slow AI responses, and recover gracefully from service failures.
+Security and Privacy
+Keep API keys on the server in environment variables; never expose them in client-side code.
+Validate user inputs and restrict access to private records.
+Minimize personal data collection and avoid unnecessary sensitive information.
+Provide appropriate access and deletion controls.
+Apply age-appropriate safeguards and obtain required permissions or consent where applicable.
+Educational Quality
+Test generated explanations and assessments for relevance, correctness, and age appropriateness. Communicate uncertainty when necessary. AI output should not diagnose learning disabilities, guarantee success, or make unsupported judgments about a student's intelligence.
+10. Proposed Technical Approach
+The stack is provisional and should be chosen based on team skills, available APIs, and hackathon rules.
+Frontend: React or Next.js.
+Backend: Python/FastAPI or suitable server-side functionality from the selected platform.
+Database/authentication: Supabase or an equivalent managed service.
+AI: an available large language model API.
+Document processing: PDF text extraction; OCR only if feasible.
+Recommendations: rules-based logic using quiz performance and topic-level results.
+Deployment: a suitable web hosting platform.
+AI Processing Workflow
+Receive and validate the user's question or learning material.
+Extract relevant text or retrieve approved learning context when appropriate.
+Generate the explanation or learning resource.
+Validate the expected output format.
+Present the result and record assessment outcomes when supported.
+Use recorded results to recommend a next learning activity.
+11. MVP Scope
+In Scope
+Responsive web application.
+AI personal tutor using text.
+Text-to-summary and text-to-quiz generation.
+Basic PDF extraction if feasible.
+Multiple-choice quizzes, scoring, and answer explanations.
+Basic personalized recommendations.
+Teacher lesson and quiz generation.
+Separate student and teacher interface experiences.
+Demonstration-ready sample content.
+Out of Scope for the First Version
+Training a large language model from scratch.
+Complete integration with every curriculum or examination format.
+Full voice-conversation functionality and advanced animation.
+Native Android and iOS apps.
+Complex school management systems or institutional integrations.
+Automated high-stakes grading.
+Fully offline AI operation.
+12. Success Metrics
+Users can complete the main learning journey without blocking errors.
+Quiz scoring matches defined answer keys.
+Recommendations correspond to actual assessment results.
+Test users can navigate the product with minimal assistance.
+Students find explanations understandable and teachers find generated materials useful.
+A later pilot compares appropriate pre- and post-learning assessments and records user feedback and content errors.
+The hackathon MVP can demonstrate feasibility. Claims of improved learning outcomes require further evaluation.
+13. Risks and Mitigation
+Incorrect AI output: test representative questions, use relevant context, and encourage teacher review.
+Answer-copying instead of learning: use guided reasoning and practice attempts.
+Limited development time: prioritize the end-to-end student workflow.
+Poor document extraction: start with pasted text and supported text-based PDFs.
+Children's data exposure: minimize collection and implement access controls.
+AI costs: constrain input sizes, avoid unnecessary model calls, and use deterministic code for quiz scoring.
+14. Three-Member Team Structure
+Suggested ownership is based on responsibilities; adjust assignments to each member's strengths.
+Member 1 — Frontend and Product Experience
+Build landing page, student dashboard, teacher dashboard, and responsive navigation.
+Implement tutoring, quiz, and learning-material interfaces.
+Handle visual design, accessibility, and user journey testing.
+Member 2 — AI and Backend
+Integrate the LLM API and develop tutoring prompts.
+Implement material summarization and quiz generation.
+Build API endpoints, input validation, and error handling.
+Member 3 — Data, Assessment, and Integration
+Implement quiz scoring, topic-level result storage, and rules-based recommendations.
+Set up database/authentication if included and manage sample educational data.
+Test educational outputs, support integration, deployment, and demo preparation.
+All three members should participate in integration, testing, and the final demonstration. Agree on API contracts and data structures early to avoid integration delays.
+15. Development Priorities
+Set up the repository, interface structure, and sample learning content.
+Build the AI tutor and complete one end-to-end student workflow.
+Implement quiz generation, scoring, and answer feedback.
+Add result storage and basic learning recommendations.
+Build the teacher resource generator.
+Test, fix errors, deploy, and rehearse the demonstration.
+If time becomes limited, deliver a reliable student learning journey before adding lower-priority features.
+16. Definition of Done
+The application is deployed and accessible.
+The student can select a topic, receive an explanation, take a quiz, and get feedback.
+Supported text can be converted into a summary and practice questions.
+Quiz scoring has been tested against known answers.
+Recommendations respond to recorded quiz results.
+The teacher assistant generates editable resources.
+Loading, empty, and error states are handled.
+API keys and private information are not exposed.
+Setup instructions and a rehearsed demo scenario are available.
+The team can explain the architecture, limitations, and next steps.
+17. Long-Term Roadmap
+Pilot the MVP with a small group of students and teachers.
+Improve educational accuracy based on feedback and evaluation.
+Explore curriculum-aligned learning paths and examination revision.
+Add voice learning, multilingual support, and visual demonstrations.
+Investigate low-bandwidth and offline study options.
+Explore school partnerships and a sustainable pricing model.
+Future expansion should follow evidence of educational value, user needs, privacy readiness, and technical feasibility.
+18. Closing Statement
+Knowva AI aims to make personalized learning more accessible while keeping students, teachers, and educational outcomes at the centre of the experience.
+Working name and tagline: Knowva AI — Learn Smarter. Grow Further.
