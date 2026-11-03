@@ -2,7 +2,7 @@ import { createClient as createAdmin } from "@supabase/supabase-js";
 import { NextResponse } from "next/server";
 import { parseBody, readJson } from "@/lib/http";
 import { createClient } from "@/lib/supabase/server";
-import { supabasePublicEnv } from "@/lib/supabase/env";
+import { supabasePublicEnv, supabaseSecretKey } from "@/lib/supabase/env";
 import { z } from "zod";
 
 export const runtime = "nodejs";
@@ -38,12 +38,12 @@ export async function POST(request: Request) {
   }
 
   const env = supabasePublicEnv();
-  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY?.trim() || null;
+  const serviceKey = supabaseSecretKey() ?? null;
   if (!env || !serviceKey) {
     return NextResponse.json(
       {
         role: "student",
-        error: "This account stays a student until SUPABASE_SERVICE_ROLE_KEY is set on the server.",
+        error: "This account stays a student until a server secret key and the project URL are set.",
       },
       { status: 409 },
     );

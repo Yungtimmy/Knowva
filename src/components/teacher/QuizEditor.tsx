@@ -36,11 +36,11 @@ export function QuizEditor({
   presetKind?: "quiz" | "marking_guide";
 }) {
   const router = useRouter();
-  const [level, setLevel] = useState(initial?.level ?? "SS1");
-  const [subject, setSubject] = useState(initial?.subject ?? "Biology");
+  const [level, setLevel] = useState(initial?.level ?? "100L");
+  const [subject, setSubject] = useState(initial?.subject ?? "Software engineering");
   const [topic, setTopic] = useState(initial?.topic ?? presetTopic);
   const [mix, setMix] = useState("10 MCQ + 2 theory");
-  const [change, setChange] = useState("Make Q3 harder and add one diagram question.");
+  const [change, setChange] = useState("Make Q3 harder and ask for the failure mode.");
   const [draft, setDraft] = useState<TeacherQuiz | null>(initial);
   const [tab, setTab] = useState<"questions" | "marking">(presetKind === "marking_guide" ? "marking" : "questions");
   const [assignClass, setAssignClass] = useState(initial?.classId ?? "ss1a");
@@ -154,20 +154,20 @@ export function QuizEditor({
       <div className="card">
         <div className="form">
           <div>
-            <label htmlFor="level">Class</label>
+            <label htmlFor="level">Level</label>
             <select id="level" value={level} onChange={(event) => setLevel(event.target.value)}>
-              <option>SS1</option>
-              <option>SS2</option>
-              <option>SS3</option>
+              <option>100L</option>
+              <option>200L</option>
+              <option>300L</option>
             </select>
           </div>
           <div>
-            <label htmlFor="subject">Subject</label>
+            <label htmlFor="subject">Course</label>
             <select id="subject" value={subject} onChange={(event) => setSubject(event.target.value)}>
-              <option>Biology</option>
-              <option>Mathematics</option>
-              <option>Physics</option>
-              <option>English</option>
+              <option>Prompt engineering</option>
+              <option>Software engineering</option>
+              <option>Web APIs</option>
+              <option>Machine learning</option>
             </select>
           </div>
           <div>
@@ -190,7 +190,7 @@ export function QuizEditor({
       <div className="review">
         <i />
         <div>
-          <b>Review and edit before classroom use.</b> Check every answer key and mark allocation. Students only see the quiz after you save and assign it.
+          <b>Review and edit before you assign it.</b> Check every answer key and mark allocation. Students only see the quiz after you save and assign it.
         </div>
       </div>
       {note ? <p className="meta" style={{ marginTop: -8, marginBottom: 12 }}>{note}</p> : null}
@@ -204,7 +204,7 @@ export function QuizEditor({
               <button className={tab === "marking" ? "on" : undefined} type="button" onClick={() => setTab("marking")} style={tabButton(tab === "marking")}>
                 Marking guide
               </button>
-              <Link href={draft.id === "photosynthesis" ? "/student/quiz/photosynthesis" : `/student/quiz/${draft.id}`}>
+              <Link href={`/student/quiz/${draft.id}`}>
                 Student view
               </Link>
             </div>
@@ -330,7 +330,7 @@ export function QuizEditor({
                 {draft.status !== "reviewed" ? " Mark it reviewed before you assign it." : ""}
               </p>
               <div className="actions">
-                <Link className="btn btn-ghost btn-sm" href={draft.id === "photosynthesis" ? "/student/quiz/photosynthesis" : `/student/quiz/${draft.id}`}>
+                <Link className="btn btn-ghost btn-sm" href={`/student/quiz/${draft.id}`}>
                   Preview as student
                 </Link>
                 <button className="btn btn-ghost btn-sm" type="button" onClick={assign} disabled={!canAssign(draft.status).ok}>

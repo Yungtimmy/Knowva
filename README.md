@@ -1,6 +1,6 @@
 # Knowva AI
 
-Knowva AI — Learn Smarter. Grow Further. A hackathon MVP for secondary students and their teachers. Students pick a subject tutor, turn notes into a study pack, and practise with quizzes. Teachers draft lesson outlines, quizzes, and marking guides, then review them before class.
+Knowva AI — Learn Smarter. Grow Further. A hackathon MVP for university students, prompt engineers, and people learning developer tools. Students pick a course tutor, turn notes into a study pack, and practise with quizzes. Lecturers draft session outlines, quizzes, and marking guides, then review them before they assign anything.
 
 This tree is the app plus the design handoff. Do not deploy it, and do not create paid cloud resources from this repo. Submission target is about 15 November 2026. “Knowva AI” is a working name.
 
@@ -19,8 +19,8 @@ Leave the Groq and Supabase keys blank to use demo mode. Tutor chat, materials, 
 | Variable | Where it is used |
 |---|---|
 | `NEXT_PUBLIC_SUPABASE_URL` | Browser and server Supabase client |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Public client key. Never put the service role here |
-| `SUPABASE_SERVICE_ROLE_KEY` | Server only. Sets a teacher role at signup. Without it, new accounts stay students |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Public client key. A publishable key in `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` works when this is blank. Never put a secret key here |
+| `SUPABASE_SECRET_KEY` or `SUPABASE_SERVICE_ROLE_KEY` | Server only. Sets a lecturer role at signup. Without it, new accounts stay students |
 | `GROQ_API_KEY` | Server only. Turns on Groq for tutor chat, materials, and test generation. Never commit it |
 | `OPENAI_API_KEY` or `LLM_API_KEY` | Server only. Used only when `GROQ_API_KEY` is blank |
 | `LLM_BASE_URL` or `OPENAI_BASE_URL` | Optional OpenAI-compatible Chat Completions base URL. Groq defaults to `https://api.groq.com/openai/v1` |
@@ -56,7 +56,7 @@ unslop credit: Damir Sokolovsky / @heydamir (CC BY 4.0) for the polish pass. See
 
 Stack: Next.js App Router, TypeScript, Supabase Auth + Postgres, server LLM calls through the Vercel AI SDK (`generateText` + `Output.object`) and `@ai-sdk/openai` Chat Completions. Keys stay in env.
 
-Demo personas on the screens are Ada (student) and Mrs. Adeyemi (teacher). `/login` is the real sign-in when Supabase env is set. Role is stored on `profiles`, not in user-editable metadata. New accounts are students. Teacher needs the service role key.
+Demo personas on the screens are Ada (student) and Dr. Adeyemi (lecturer). `/login` is the real sign-in when Supabase env is set. Role is stored on `profiles`, not in user-editable metadata. New accounts are students. The lecturer role still uses the teacher account flag and needs the service role key.
 
 ### Routes
 
@@ -67,22 +67,22 @@ Demo personas on the screens are Ada (student) and Mrs. Adeyemi (teacher). `/log
 | `/student/tutors` | Tutor library. Create, edit, delete |
 | `/student/tutors/new` | Create a tutor. `?id=` edits one |
 | `/student/tutor` | Sample tutor chat |
-| `/student/tutor/[sessionId]` | Sample subject (`maths`, `biology`, `physics`, `english`) or a saved tutor id |
+| `/student/tutor/[sessionId]` | Sample course (`prompts`, `python`, `http`, `models`) or a saved tutor id |
 | `/student/learn` | Discover resources and saved packs |
 | `/student/materials` | Notes or a text PDF in, study pack out |
-| `/student/materials/[packId]` | A saved pack (`cell-structure` is the sample) |
+| `/student/materials/[packId]` | A saved pack (`git-basics` is the sample) |
 | `/student/tests` | Test Centre. Start a course MCQ |
 | `/student/tests/[id]` | Take a test. Tab bar hidden. Tutor chat locked |
 | `/student/tests/[id]/results` | Score, explanations, weak topics |
 | `/student/progress` | Test history and topic percentages |
-| `/student/quiz/[quizId]` | Practice quiz, separate from Test Centre. `?review=1` or `#review` opens the photosynthesis results state |
+| `/student/quiz/[quizId]` | Practice quiz, separate from Test Centre. `?review=1` or `#review` opens the few-shot results state |
 | `/teacher` | Teacher home |
 | `/teacher/lesson/new` | Lesson generator |
-| `/teacher/lesson/[id]` | Editable outline (`quadratics` is the sample) |
+| `/teacher/lesson/[id]` | Editable outline (`system-prompts` is the sample) |
 | `/teacher/quiz/new` | Quiz / marking-guide generator |
-| `/teacher/quiz/[id]` | Questions, key, marking guide, assign (`photosynthesis`, `indices`, `ohms`) |
-| `/teacher/class` | Redirects to SS2 A |
-| `/teacher/class/[classId]` | Class insights (`ss2a`, `ss2b`, `ss1a`, `ss3a`) |
+| `/teacher/quiz/[id]` | Questions, key, marking guide, assign (`few-shot`, `sampling`, `status-codes`) |
+| `/teacher/class` | Redirects to CSC 201 A |
+| `/teacher/class/[classId]` | Class insights (`ss2a` CSC 201 A, `ss2b` CSC 201 B, `ss1a` CSC 101 A, `ss3a` CSC 301 A) |
 | `/login` | Email sign-in. Optional |
 
 Student tabs: Home, Tutors, Learn, Tests, Progress. Practice quizzes stay off that bar. Teacher sidebar: Home, Lesson outlines, Quizzes and marking, Class insights.
@@ -93,7 +93,7 @@ Student screens follow `design/student/` (including the PRD v1 mocks: `tutors.ht
 
 - A generation is `draft` (shown as “Needs review”) until someone marks it `reviewed`. Assign is refused until then. Regenerating returns it to draft.
 - Gap means class average **below 60%**. 60–69 is Watch. 70 and above is On track. The label is computed from the average.
-- Every generator shows “Review and edit before classroom use.”
+- Every generator shows “Review and edit before you assign it.”
 - One quiz score is a signal, not a measure of ability. Below 60% recommends a tutor review, 60–79% more practice, 80% and above a harder set.
 - Quiz scores come from the answer key on the server. The client does not send the score.
 - A student can keep 8 tutors. The ninth create returns 409.

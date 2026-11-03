@@ -27,13 +27,13 @@ const CYCLE = [
   { variant: "ink" as const, smile: false, tile: "#1C1B19" },
 ];
 
-const KNOWN = new Set(["Mathematics", "Biology", "Physics", "English"]);
+const KNOWN = new Set(["Prompt engineering", "Software engineering", "Web APIs", "Machine learning"]);
 
 type NextStep = { href: string; title: string; detail: string };
 
 const SAMPLE_NEXT: NextStep[] = [
-  { href: "/student/tutor/biology", title: "Revise light reactions", detail: "Biology · scored 2/5" },
-  { href: "/student/quiz/quadratics", title: "Retake Quadratics quiz", detail: "Maths · last try 3/5" },
+  { href: "/student/tutor/python", title: "Revise failing tests", detail: "Software engineering · scored 2/5" },
+  { href: "/student/quiz/few-shot", title: "Retake the few-shot quiz", detail: "Prompt engineering · last try 2/4" },
 ];
 
 type Desk = {
@@ -127,7 +127,7 @@ export default function StudentHomePage() {
         <h1>
           {hello}, Ada
         </h1>
-        <p>Your tutors are on the desk. Pick one and keep going.</p>
+        <p>Your course tutors are on the desk. Pick one and keep going.</p>
       </section>
       {desk ? (
         <div className="dash-grid">

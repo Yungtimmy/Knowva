@@ -4,16 +4,16 @@ import Link from "next/link";
 import { useState, type FormEvent } from "react";
 import { postJson } from "@/lib/api-client";
 import { readStore, writeStore } from "@/lib/browser-store";
-import { cellPack } from "@/lib/demo";
+import { samplePack } from "@/lib/demo";
 import type { StudyPack } from "@/lib/types";
 import { PackView } from "./PackView";
 
 const STARTER_NOTES =
-  "The cell is the basic unit of life. Plant cells have a cell wall, chloroplasts and a large vacuole. Animal cells do not. The nucleus controls the cell. Mitochondria release energy through respiration...";
+  "Git stores snapshots of your project. git add stages a change. git commit records that snapshot with a message about why it changed. git status shows what is staged, changed, or untracked. git log shows the history on this branch...";
 
 type Response = { demo?: boolean; pack: StudyPack };
 
-const SUBJECTS = ["Biology", "Mathematics", "Physics", "English"];
+const SUBJECTS = ["Prompt engineering", "Software engineering", "Web APIs", "Machine learning"];
 
 export function MaterialsStudio({
   initialSubject,
@@ -23,10 +23,10 @@ export function MaterialsStudio({
   initialTopic?: string;
 }) {
   const custom = Boolean(initialSubject || initialTopic);
-  const [subject, setSubject] = useState(initialSubject || cellPack.subject);
-  const [topic, setTopic] = useState(initialTopic || cellPack.topic);
+  const [subject, setSubject] = useState(initialSubject || samplePack.subject);
+  const [topic, setTopic] = useState(initialTopic || samplePack.topic);
   const [notes, setNotes] = useState(custom ? "" : STARTER_NOTES);
-  const [pack, setPack] = useState<StudyPack | null>(custom ? null : cellPack);
+  const [pack, setPack] = useState<StudyPack | null>(custom ? null : samplePack);
   const [busy, setBusy] = useState(false);
   const [note, setNote] = useState("");
   const [pdfNote, setPdfNote] = useState("");
@@ -74,12 +74,12 @@ export function MaterialsStudio({
         </svg>
       </section>
       <form className="card" onSubmit={onSubmit}>
-        <label>Subject and topic</label>
+        <label>Course and topic</label>
         <div className="fields" style={{ marginBottom: 10 }}>
           <input
             value={subject}
             list="pack-subjects"
-            aria-label="Subject"
+            aria-label="Course"
             onChange={(event) => setSubject(event.target.value)}
           />
           <input value={topic} onChange={(event) => setTopic(event.target.value)} aria-label="Topic" />

@@ -154,7 +154,7 @@ function TestCentre() {
             <input
               style={{ marginTop: 8 }}
               value={custom}
-              placeholder="STA 201 · Probability"
+              placeholder="CSC 301 · Prompt engineering"
               aria-label="Course name"
               onChange={(event) => setCustom(event.target.value)}
               required

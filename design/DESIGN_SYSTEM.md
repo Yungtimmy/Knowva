@@ -1,6 +1,8 @@
 # Knowva AI — Design System v1 (2 Nov 2026)
 Source: /workspace/knowva/landing-reference.jpg, PRD.txt. Tokens: tokens.css.
 
+MVP audience is university students, prompt engineers, and people learning developer tools. The visual system below stays as specified. Copy speaks to courses, labs, and building, not secondary-school exams.
+
 ## Palette
 | Token | Hex | Use |
 |---|---|---|
@@ -32,7 +34,7 @@ Blobby clouds (blue, orange, yellow), two oval eyes with black pupils looking si
 - Labels are verbs: "Create a Tutor", "Start quiz", "Make notes".
 
 ## Tone bible
-Plain, friendly, direct, like a good older sibling who tutors. Short sentences. No exclamation marks in UI. Speak to the outcome (grades, time saved, understanding).
+Plain, friendly, direct. Short sentences. No exclamation marks in UI. Speak to the outcome (a working example, time saved, understanding).
 Banned words: seamless, empower, unlock, revolutionize, leverage, elevate, supercharge, cutting-edge, game-changer, delve.
 
 ## Rejection list

@@ -22,7 +22,7 @@ export default function LandingPage() {
         <div className={styles.navr}>
           <div className={open ? `${styles.links} ${styles.linksOpen}` : styles.links}>
             <a href="#for-students">For students</a>
-            <a href="#for-teachers">For teachers</a>
+            <a href="#for-teachers">For lecturers</a>
             <a href="#pricing">Pricing</a>
           </div>
           <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true">
@@ -61,17 +61,17 @@ export default function LandingPage() {
           </svg>
         </div>
         <h1>
-          Learn faster
+          Learn the tools
           <br />
-          Get better grades
+          Build with them
         </h1>
         <p className={styles.sub}>
-          A personal AI tutor that explains your lessons, turns notes into practice, and shows you what to revise next.
+          A course tutor for university students and people learning to build. It explains the idea, turns notes into practice, and shows what to work on next.
         </p>
         <Link className={styles.btn} href="/student/tutor">
           Create a Tutor
         </Link>
-        <p className={styles.meta}>One tutor for every subject you take.</p>
+        <p className={styles.meta}>One tutor for each course you are taking.</p>
       </section>
 
       <section className={styles.beat}>
@@ -99,17 +99,17 @@ export default function LandingPage() {
             Understand any question, <em>step by step</em>
           </h2>
           <div className={styles.chat}>
-            <div className={`${styles.m} ${styles.me}`}>Why does the quadratic formula have ± in it?</div>
+            <div className={`${styles.m} ${styles.me}`}>Why does a system prompt sit above the user message?</div>
             <div className={`${styles.m} ${styles.ai}`}>
-              <small>Maths tutor</small>
-              A quadratic curve can cross the x-axis in two places. The ± gives you both: one answer adds the square root, the other subtracts it. Want to try one?
+              <small>Prompt tutor</small>
+              A system prompt sets the rules for the whole chat. The user message is one turn inside those rules. When they conflict, the system rules win. Want to try one?
               <div className={styles.quiz}>
-                <span>Solve x² − 5x + 6 = 0</span>
-                <span>Show me a graph</span>
+                <span>Write a 4-line system prompt</span>
+                <span>Show a bad example</span>
               </div>
             </div>
             <div className={styles.input}>
-              <span>Ask your Biology tutor…</span>
+              <span>Ask your prompt tutor…</span>
               <i />
             </div>
           </div>
@@ -121,14 +121,14 @@ export default function LandingPage() {
           <div className={styles.n} style={{ background: "#FFE3D8", color: "#C7360F" }}>1</div>
           <div>
             <h3>A tutor that teaches, not just answers</h3>
-            <p>It explains in small steps, checks you understood, and adjusts to your class level.</p>
+            <p>It explains in small steps, checks you understood, and stays on the course you picked.</p>
           </div>
         </article>
         <article className={styles.feat}>
           <div className={styles.n} style={{ background: "#E6E3F7", color: "#2412B0" }}>2</div>
           <div>
             <h3>Notes in, study pack out</h3>
-            <p>Upload class notes and get a summary, flashcards, and key terms in under a minute.</p>
+            <p>Paste lecture notes or a README and get a summary, flashcards, and key terms.</p>
           </div>
         </article>
         <article className={styles.feat}>
@@ -141,8 +141,8 @@ export default function LandingPage() {
         <article className={styles.feat}>
           <div className={styles.n} style={{ background: "#E8E3D6", color: "#1C1B19" }}>4</div>
           <div>
-            <h3>See what to revise next</h3>
-            <p>Your dashboard tracks scores by topic and points to the weakest one first.</p>
+            <h3>See what to practise next</h3>
+            <p>Your desk tracks scores by topic and points at the weakest one first.</p>
           </div>
         </article>
       </section>
@@ -150,16 +150,16 @@ export default function LandingPage() {
       <section className={styles.who}>
         <div className={styles.card} id="for-students" style={{ background: "#EEEBFA" }}>
           <h3>For students</h3>
-          <p>Exam prep for WAEC, GCSE and beyond. Study at your pace, on your phone.</p>
+          <p>University courses, prompt engineering, and developer skills. Study at your pace, on your phone.</p>
           <Link className={styles.sec} href="/student">
             Start learning
           </Link>
         </div>
         <div className={styles.card} id="for-teachers" style={{ background: "#FDF6D6" }}>
-          <h3>For teachers</h3>
-          <p>Lesson outlines, quizzes and marking guides from your own material, ready to edit.</p>
+          <h3>For lecturers</h3>
+          <p>Session outlines, quizzes and marking guides from your own material, ready to edit.</p>
           <Link className={styles.sec} href="/teacher/lesson/new">
-            Plan a lesson
+            Draft an outline
           </Link>
         </div>
       </section>

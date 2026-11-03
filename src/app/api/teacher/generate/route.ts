@@ -99,9 +99,9 @@ export async function POST(request: Request) {
       modelOutlineSchema,
       [
         `Draft a ${minutes} minute ${input.level} ${input.subject} lesson on ${input.topic}.`,
-        input.kind === "notes" ? "Write class notes a teacher can hand out." : "Write objectives, a timed plan, class notes, and common mistakes.",
-        input.prompt ? `Teacher request: ${input.prompt}` : "",
-        "The teacher will edit this before class. Do not claim it is ready to teach.",
+        input.kind === "notes" ? "Write session notes a lecturer can hand out." : "Write objectives, a timed plan, session notes, and common mistakes.",
+        input.prompt ? `Lecturer request: ${input.prompt}` : "",
+        "The lecturer will edit this before assigning it. Do not claim it is ready to teach.",
       ].join("\n"),
     );
     const payload = {

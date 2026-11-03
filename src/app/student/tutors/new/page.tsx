@@ -100,7 +100,7 @@ function TutorForm() {
             id="n"
             value={name}
             maxLength={80}
-            placeholder="Statistics Coach"
+            placeholder="Prompt Coach"
             onChange={(event) => setName(event.target.value)}
             required
           />
@@ -111,7 +111,7 @@ function TutorForm() {
             id="c"
             value={course}
             maxLength={120}
-            placeholder="STA 201 · Probability"
+            placeholder="CSC 301 · Prompt engineering"
             onChange={(event) => setCourse(event.target.value)}
             required
           />
@@ -122,7 +122,7 @@ function TutorForm() {
             id="w"
             rows={3}
             maxLength={500}
-            placeholder="Conditional probability and Bayes' theorem before my midterm."
+            placeholder="System prompts and few-shot examples before my lab demo."
             value={focus}
             onChange={(event) => setFocus(event.target.value)}
             required

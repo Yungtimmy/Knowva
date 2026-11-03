@@ -11,9 +11,9 @@ import type { ResourceBundle, TutorCard, TutorMessage } from "@/lib/types";
 type Reply = { demo?: boolean; message: TutorMessage; resources?: ResourceBundle | null };
 
 const SCHOOL_LEVELS = [
-  { id: "SS1", label: "SS1" },
-  { id: "SS2", label: "SS2" },
-  { id: "SS3", label: "SS3" },
+  { id: "100L", label: "100L" },
+  { id: "200L", label: "200L" },
+  { id: "300L", label: "300L" },
 ];
 
 const LEARNING_LEVELS = [
@@ -22,13 +22,13 @@ const LEARNING_LEVELS = [
   { id: "advanced", label: "Advanced" },
 ];
 
-const SUBJECTS = ["Biology", "Mathematics", "Physics", "English"];
+const SUBJECTS = ["Prompt engineering", "Software engineering", "Web APIs", "Machine learning"];
 
 export function TutorDesk({ tutor, persistedId }: { tutor?: TutorCard; persistedId?: string }) {
   const lockedCourse = Boolean(persistedId);
-  const [level, setLevel] = useState(tutor?.level ?? "SS2");
-  const [subject, setSubject] = useState(tutor?.subject ?? "Biology");
-  const [topic, setTopic] = useState(tutor?.topic ?? "Photosynthesis");
+  const [level, setLevel] = useState(tutor?.level ?? "200L");
+  const [subject, setSubject] = useState(tutor?.subject ?? "Prompt engineering");
+  const [topic, setTopic] = useState(tutor?.topic ?? "System prompts");
   const [draft, setDraft] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -105,7 +105,7 @@ export function TutorDesk({ tutor, persistedId }: { tutor?: TutorCard; persisted
             </select>
           </div>
           <div>
-            <label htmlFor="subject">Subject</label>
+            <label htmlFor="subject">Course</label>
             {lockedCourse ? (
               <p id="subject" style={{ margin: "8px 0 0", color: "var(--kn-ink)", fontWeight: 500 }}>
                 {subject}
@@ -274,13 +274,13 @@ function TutorFace() {
 }
 
 function openingThread(tutor: TutorCard | undefined, persisted: boolean): TutorMessage[] {
-  if (!persisted && (!tutor || tutor.id === "biology" || tutor.subject === "Biology")) {
+  if (!persisted && (!tutor || tutor.id === "prompts" || tutor.subject === "Prompt engineering")) {
     return [
-      { role: "user", short: "Why do plants need light to make food?", steps: [], remember: "" },
+      { role: "user", short: "Why does a system prompt sit above the user message?", steps: [], remember: "" },
       demoTutorReply({
-        subject: "Biology",
-        topic: "Photosynthesis",
-        message: "Why do plants need light to make food?",
+        subject: "Prompt engineering",
+        topic: "System prompts",
+        message: "Why does a system prompt sit above the user message?",
       }),
     ];
   }
@@ -289,11 +289,11 @@ function openingThread(tutor: TutorCard | undefined, persisted: boolean): TutorM
 }
 
 function practiceTarget(subject: string, topic: string, persistedId?: string) {
-  if (!persistedId && (subject === "Biology" || /photo/i.test(topic))) {
-    return { href: "/student/quiz/photosynthesis", label: "Start practice", note: "3 quick questions on this answer" };
+  if (!persistedId && (subject === "Prompt engineering" || /few-shot|system prompt/i.test(topic))) {
+    return { href: "/student/quiz/few-shot", label: "Start practice", note: "3 quick questions on this answer" };
   }
-  if (!persistedId && (subject === "Mathematics" || /quad/i.test(topic))) {
-    return { href: "/student/quiz/quadratics", label: "Start practice", note: "3 quick questions on this answer" };
+  if (!persistedId && (subject === "Web APIs" || /fetch|http/i.test(topic))) {
+    return { href: "/student/quiz/fetch", label: "Start practice", note: "3 quick questions on this answer" };
   }
   const params = new URLSearchParams({ course: subject, count: "5" });
   if (persistedId) params.set("tutor", persistedId);

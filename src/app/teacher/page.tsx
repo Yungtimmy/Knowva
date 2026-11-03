@@ -14,7 +14,7 @@ export default function TeacherHomePage() {
       <div className="head">
         <div>
           <p className="meta">{DEMO_DATE_LONG}</p>
-          <h1>Good morning, Mrs. Adeyemi</h1>
+          <h1>Good morning, Dr. Adeyemi</h1>
         </div>
         <Link className="btn btn-primary" href="/teacher/lesson/new">
           Generate lesson outline
@@ -39,7 +39,7 @@ export default function TeacherHomePage() {
               </Link>
               <Link href="/teacher/class">
                 <b>Find topic gaps</b>
-                See which topics your class missed most.
+                See which topics the group missed most.
               </Link>
             </div>
           </div>
@@ -84,37 +84,37 @@ export default function TeacherHomePage() {
         </div>
         <div>
           <div className="card">
-            <h2>Subjects you teach</h2>
+            <h2>Courses you teach</h2>
             <table>
               <tbody>
                 <tr>
                   <td>
-                    <b>Mathematics</b>
+                    <b>Prompt engineering</b>
                     <br />
-                    <span className="meta">SS2 A, SS2 B</span>
+                    <span className="meta">CSC 201 A, CSC 201 B</span>
                   </td>
                   <td style={{ textAlign: "right" }}>12 items</td>
                 </tr>
                 <tr>
                   <td>
-                    <b>Biology</b>
+                    <b>Software engineering</b>
                     <br />
-                    <span className="meta">SS1 A</span>
+                    <span className="meta">CSC 101 A</span>
                   </td>
                   <td style={{ textAlign: "right" }}>7 items</td>
                 </tr>
                 <tr>
                   <td>
-                    <b>Physics</b>
+                    <b>Web APIs</b>
                     <br />
-                    <span className="meta">SS3 A</span>
+                    <span className="meta">CSC 301 A</span>
                   </td>
                   <td style={{ textAlign: "right" }}>4 items</td>
                 </tr>
               </tbody>
             </table>
             <Link className="btn btn-ghost btn-sm" href="/teacher/lesson/new" style={{ marginTop: 12 }}>
-              Add a subject
+              Add a course
             </Link>
           </div>
           <div className="card">
@@ -123,23 +123,23 @@ export default function TeacherHomePage() {
               <tbody>
                 <tr>
                   <td>
-                    <b>Term 1 revision pack</b>
+                    <b>Week 6 lab pack</b>
                     <br />
-                    <span className="meta">SS2 Maths · 6 files</span>
+                    <span className="meta">CSC 201 · 6 files</span>
                   </td>
                 </tr>
                 <tr>
                   <td>
-                    <b>Cell structure notes</b>
+                    <b>Git notes</b>
                     <br />
-                    <span className="meta">SS1 Biology · edited Oct 28</span>
+                    <span className="meta">CSC 101 · edited Oct 28</span>
                   </td>
                 </tr>
                 <tr>
                   <td>
-                    <b>Electricity mock exam</b>
+                    <b>API design paper</b>
                     <br />
-                    <span className="meta">SS3 Physics · with marking guide</span>
+                    <span className="meta">CSC 301 · with marking guide</span>
                   </td>
                 </tr>
               </tbody>
@@ -147,7 +147,7 @@ export default function TeacherHomePage() {
           </div>
           <div className="card" style={{ background: "var(--kn-cream)" }}>
             <h3>Topic gap this week</h3>
-            <p style={{ marginTop: 4 }}>SS2 A averaged 48% on completing the square. A short re-teach outline may help.</p>
+            <p style={{ marginTop: 4 }}>CSC 201 A averaged 48% on few-shot examples. A short re-teach outline may help.</p>
             <Link className="btn btn-ghost btn-sm" href="/teacher/class/ss2a" style={{ marginTop: 10 }}>
               See class insights
             </Link>

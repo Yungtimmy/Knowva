@@ -24,7 +24,7 @@ export function ClassBoard({ classId }: { classId: string }) {
       <>
         <h1>No class with that id</h1>
         <p>Open a class from the list.</p>
-        <Link href="/teacher/class/ss2a">SS2 A</Link>
+        <Link href="/teacher/class/ss2a">CSC 201 A</Link>
       </>
     );
   }

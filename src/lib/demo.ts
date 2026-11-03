@@ -16,69 +16,71 @@ export const DEMO_DATE_LONG = "Monday, 2 November";
 
 export const tutors: TutorCard[] = [
   {
-    id: "maths",
-    subject: "Mathematics",
-    level: "SS2",
-    topic: "Quadratics",
+    id: "prompts",
+    subject: "Prompt engineering",
+    level: "200L",
+    topic: "System prompts",
     status: "in_lesson",
-    preview: "Nice, step 3 of completing the square is right. Ready for the next one?",
+    preview: "Nice, the system rules stay above the user turn. Ready for few-shot?",
     updatedAt: "10:42",
   },
   {
-    id: "biology",
-    subject: "Biology",
-    level: "SS2",
-    topic: "Photosynthesis",
+    id: "python",
+    subject: "Software engineering",
+    level: "200L",
+    topic: "Testing",
     status: "needs_review",
-    preview: "You scored 2/5 on light reactions. Let's go over it together.",
+    preview: "You scored 2/5 on failing tests. Let's go over it together.",
     updatedAt: "Sat",
   },
   {
-    id: "physics",
-    subject: "Physics",
-    level: "SS2",
-    topic: "Motion",
+    id: "http",
+    subject: "Web APIs",
+    level: "200L",
+    topic: "HTTP",
     status: "ready",
-    preview: "Ask me about speed, velocity or Newton's laws.",
+    preview: "Ask me about methods, status codes, or what fetch sends.",
     updatedAt: "Fri",
   },
   {
-    id: "english",
-    subject: "English",
-    level: "SS2",
-    topic: "Comprehension",
+    id: "models",
+    subject: "Machine learning",
+    level: "200L",
+    topic: "Evaluation",
     status: "ready",
-    preview: "Great work on reading for meaning, 5/5. Want a harder passage?",
+    preview: "Great work on precision and recall, 5/5. Want a harder split?",
     updatedAt: "Thu",
   },
 ];
 
 export function tutorTitle(subject: string) {
-  if (subject === "Mathematics") return "Maths Tutor";
+  if (subject === "Prompt engineering") return "Prompt Tutor";
+  if (subject === "Software engineering") return "Software Tutor";
+  if (subject === "Web APIs") return "API Tutor";
+  if (subject === "Machine learning") return "ML Tutor";
   return `${subject} Tutor`;
 }
 
-const PHOTOSYNTHESIS_REPLY: TutorMessage = {
+const PROMPT_REPLY: TutorMessage = {
   role: "tutor",
-  short: "Light gives the plant the energy to turn water and carbon dioxide into glucose.",
+  short: "A system prompt sets the rules. The user message is one turn inside those rules.",
   steps: [
-    "Chlorophyll in the leaf traps light.",
-    "That energy splits water, releasing oxygen.",
-    "The plant uses the stored energy to build glucose from carbon dioxide.",
+    "Put the role, the limits, and the output shape in the system prompt.",
+    "Put the actual task in the user message.",
+    "If they conflict, the system rules win. Do not let the user turn overwrite them.",
   ],
-  remember: "Light in, sugar made, oxygen out.",
+  remember: "System rules first. User task second.",
 };
 
-const QUADRATIC_REPLY: TutorMessage = {
+const TEST_REPLY: TutorMessage = {
   role: "tutor",
-  short:
-    "A quadratic curve can cross the x-axis in two places. The ± gives you both: one answer adds the square root, the other subtracts it. Want to try one?",
+  short: "A failing test is a signal about one behaviour, not a verdict on the whole program.",
   steps: [
-    "Start from ax² + bx + c = 0.",
-    "The formula is x = (−b ± √(b² − 4ac)) / 2a.",
-    "The plus sign is one crossing. The minus sign is the other.",
+    "Read the assertion that failed.",
+    "Name the input and the expected output.",
+    "Change one thing, then run that test again.",
   ],
-  remember: "± means two possible roots, not a typo.",
+  remember: "One failure, one behaviour, one change.",
 };
 
 export function demoTutorReply(input: {
@@ -128,16 +130,16 @@ export function demoTutorReply(input: {
     };
   }
 
-  if (text.includes("quadratic") && (text.includes("±") || text.includes("formula") || text.includes("plus"))) {
-    return QUADRATIC_REPLY;
+  if (text.includes("system prompt") || text.includes("few-shot") || text.includes("user message")) {
+    return PROMPT_REPLY;
   }
 
-  if (text.includes("light") || text.includes("photosynthesis") || text.includes("food")) {
-    return PHOTOSYNTHESIS_REPLY;
+  if (text.includes("pytest") || text.includes("failing test") || text.includes("assertion")) {
+    return TEST_REPLY;
   }
 
-  if (input.topic.toLowerCase().includes("quadratic")) {
-    return QUADRATIC_REPLY;
+  if (input.topic.toLowerCase().includes("system prompt")) {
+    return PROMPT_REPLY;
   }
 
   return {
@@ -159,11 +161,11 @@ function question(
   return { id: partial.id ?? `q${index + 1}`, ...partial };
 }
 
-export const photosynthesisQuestions: Question[] = [
-  ["Where in the leaf does photosynthesis mostly happen?", ["Root hairs", "Chloroplasts", "Stomata", "Xylem"], 1, "Chloroplasts hold chlorophyll, which traps the light energy."],
-  ["Which gas do plants take in for photosynthesis?", ["Oxygen", "Nitrogen", "Carbon dioxide", "Hydrogen"], 2, "Carbon dioxide enters through the stomata and becomes part of glucose."],
-  ["What is released as a by-product?", ["Oxygen", "Glucose", "Water", "Starch"], 0, "Splitting water releases oxygen, which leaves through the stomata."],
-  ["What does chlorophyll absorb?", ["Heat", "Light", "Minerals", "Sugar"], 1, "Chlorophyll absorbs light, mostly red and blue, and reflects green."],
+export const fewShotQuestions: Question[] = [
+  ["Where does a system prompt sit relative to the user message?", ["After the answer", "Above the user message", "Inside the temperature setting", "In the answer key"], 1, "The system prompt sets the rules before the user turn is read."],
+  ["What is a few-shot example?", ["A longer system prompt", "A hidden answer key", "An example of input and output in the prompt", "A database index"], 2, "Few-shot means you show a small number of input and output pairs."],
+  ["If the system prompt and the user message conflict, what should the model prefer?", ["The system prompt", "The latest joke", "A random option", "The user's request to ignore the rules"], 0, "The system rules win. A user turn cannot overwrite them."],
+  ["What does temperature change?", ["The answer key", "How random the next tokens are", "The course the tutor is locked to", "The student's password"], 1, "Temperature changes how random the next token choice is. It does not change the rules."],
 ].map(([prompt, options, answerIndex, explanation], index) =>
   question(
     {
@@ -171,145 +173,145 @@ export const photosynthesisQuestions: Question[] = [
       options: options as string[],
       answerIndex: answerIndex as number,
       explanation: explanation as string,
-      subject: "Biology",
-      topic: "Photosynthesis",
+      subject: "Prompt engineering",
+      topic: "Few-shot",
     },
     index,
   ),
 );
 
-export const quadraticsQuestions: Question[] = [
+export const fetchQuestions: Question[] = [
   question({
-    prompt: "Solve x² − 5x + 6 = 0.",
-    options: ["x = 2 or x = 3", "x = 1 or x = 6", "x = −2 or x = −3", "x = 5 or x = 6"],
+    prompt: "Which status means the server created the resource?",
+    options: ["201", "404", "500", "301"],
     answerIndex: 0,
-    explanation: "2 × 3 = 6 and 2 + 3 = 5, so (x − 2)(x − 3) = 0.",
-    subject: "Mathematics",
-    topic: "Quadratics",
+    explanation: "201 Created means the request succeeded and a new resource exists.",
+    subject: "Web APIs",
+    topic: "HTTP",
   }, 0),
   question({
-    prompt: "Factorise x² + 7x + 12.",
-    options: ["(x + 3)(x + 4)", "(x + 2)(x + 6)", "(x + 7)(x + 1)", "(x − 3)(x − 4)"],
+    prompt: "Which method is safe to retry because it should not change server state?",
+    options: ["GET", "POST", "PATCH", "DELETE"],
     answerIndex: 0,
-    explanation: "3 × 4 = 12 and 3 + 4 = 7.",
-    subject: "Mathematics",
-    topic: "Quadratics",
+    explanation: "GET reads. A correct GET does not create or edit a resource.",
+    subject: "Web APIs",
+    topic: "HTTP",
   }, 1),
   question({
-    prompt: "Which pair multiplies to 6 and adds to 5?",
-    options: ["2 and 3", "1 and 6", "6 and −1", "3 and 3"],
+    prompt: "A missing route most often returns",
+    options: ["404", "200", "201", "204"],
     answerIndex: 0,
-    explanation: "2 × 3 = 6 and 2 + 3 = 5. That pair factorises x² + 5x + 6.",
-    subject: "Mathematics",
-    topic: "Quadratics",
+    explanation: "404 means the server has no resource at that path.",
+    subject: "Web APIs",
+    topic: "HTTP",
   }, 2),
   question({
-    prompt: "What should you do first with x² + 5x = −6?",
-    options: ["Move every term to one side", "Divide by x", "Square both sides", "Take the square root of both sides"],
+    prompt: "What should you check first when fetch fails on your machine?",
+    options: ["The URL, method, and response status", "The model temperature", "The git author name", "The CSS colour"],
     answerIndex: 0,
-    explanation: "Factorising needs the equation equal to zero: x² + 5x + 6 = 0.",
-    subject: "Mathematics",
-    topic: "Quadratics",
+    explanation: "Start with the request you sent and the status the server returned.",
+    subject: "Web APIs",
+    topic: "HTTP",
   }, 3),
   question({
-    prompt: "The roots of (x − 2)(x − 3) = 0 are",
-    options: ["2 and 3", "−2 and −3", "5 and 6", "2 and −3"],
+    prompt: "204 means",
+    options: ["Success with no body", "The server crashed", "The client must sign in", "The resource moved"],
     answerIndex: 0,
-    explanation: "A product is zero when either factor is zero, so x = 2 or x = 3.",
-    subject: "Mathematics",
-    topic: "Quadratics",
+    explanation: "204 No Content is a success status with an empty body.",
+    subject: "Web APIs",
+    topic: "HTTP",
   }, 4),
 ];
 
-const cellQuestions: Question[] = [
+const gitQuestions: Question[] = [
   question({
-    prompt: "Which part is found only in plant cells?",
-    options: ["Nucleus", "Cell wall", "Mitochondrion", "Cytoplasm"],
+    prompt: "What does git commit record?",
+    options: ["The editor theme", "A snapshot of staged changes", "The production password", "A CSS colour"],
     answerIndex: 1,
-    explanation: "Plant cells have a cell wall. Animal cells do not.",
-    subject: "Biology",
-    topic: "Cell structure",
+    explanation: "A commit stores the staged snapshot, with a message about why it changed.",
+    subject: "Software engineering",
+    topic: "Git",
   }, 0),
   question({
-    prompt: "What does the mitochondrion do?",
-    options: ["Stores the genetic code", "Releases energy from food", "Traps light", "Holds cell sap"],
+    prompt: "What does git status show?",
+    options: ["The model temperature", "Which files are staged, changed, or untracked", "The HTTP status code", "The exam timetable"],
     answerIndex: 1,
-    explanation: "Mitochondria release energy through respiration.",
-    subject: "Biology",
-    topic: "Cell structure",
+    explanation: "git status lists the working tree against the last commit.",
+    subject: "Software engineering",
+    topic: "Git",
   }, 1),
   question({
-    prompt: "Which structure controls the cell?",
-    options: ["Nucleus", "Cell wall", "Vacuole", "Cytoplasm"],
+    prompt: "Which command moves a file into the next commit?",
+    options: ["git add", "git log", "git clone", "git blame"],
     answerIndex: 0,
-    explanation: "The nucleus holds DNA and controls what the cell does.",
-    subject: "Biology",
-    topic: "Cell structure",
+    explanation: "git add stages the file. The commit comes after that.",
+    subject: "Software engineering",
+    topic: "Git",
   }, 2),
   question({
-    prompt: "Plant cells usually have a large",
-    options: ["Vacuole", "Flagellum", "Capsule", "Nucleoid"],
+    prompt: "A useful commit message names",
+    options: ["The change and why", "Every file in the repo", "Your password", "The lecture hall"],
     answerIndex: 0,
-    explanation: "The large permanent vacuole holds cell sap.",
-    subject: "Biology",
-    topic: "Cell structure",
+    explanation: "Say what changed and why. The diff already lists the lines.",
+    subject: "Software engineering",
+    topic: "Git",
   }, 3),
   question({
-    prompt: "Animal cells do not have",
-    options: ["A cell wall", "A nucleus", "Cytoplasm", "Mitochondria"],
+    prompt: "git log shows",
+    options: ["Commit history", "Only untracked files", "The system prompt", "Open pull requests on every host"],
     answerIndex: 0,
-    explanation: "The cell wall is the plant-cell extra named in the notes.",
-    subject: "Biology",
-    topic: "Cell structure",
+    explanation: "git log walks the commits on the current branch.",
+    subject: "Software engineering",
+    topic: "Git",
   }, 4),
 ];
 
-export const cellPack: StudyPack = {
-  id: "cell-structure",
-  subject: "Biology",
-  topic: "Cell structure",
+export const samplePack: StudyPack = {
+  id: "git-basics",
+  subject: "Software engineering",
+  topic: "Git",
   summary: [
-    "Cells are the smallest living units.",
-    "Plant cells add a wall, chloroplasts and a big vacuole.",
-    "The nucleus holds DNA and runs the cell.",
-    "Mitochondria release energy from food.",
+    "Git stores snapshots of your project, not just the latest files.",
+    "git add stages a change. git commit records that snapshot with a message.",
+    "git status shows what is staged, changed, or untracked.",
+    "git log shows the history of commits on this branch.",
   ],
   flashcards: [
-    { q: "What does the mitochondrion do?", a: "Releases energy from food through respiration." },
-    { q: "What controls the cell?", a: "The nucleus, which holds the DNA." },
-    { q: "Name two parts found in plant cells but not animal cells.", a: "A cell wall and chloroplasts. Plant cells also have a large vacuole." },
-    { q: "What is a cell?", a: "The basic unit of life." },
+    { q: "What does git commit record?", a: "A snapshot of the staged changes, plus a message." },
+    { q: "What does git status show?", a: "Files that are staged, changed, or untracked." },
+    { q: "Which command stages a file?", a: "git add. The commit comes after that." },
+    { q: "What belongs in a commit message?", a: "What changed, and why." },
   ],
-  questions: cellQuestions,
+  questions: gitQuestions,
 };
 
 export const quizzes: Record<string, { id: string; subject: string; topic: string; questions: Question[] }> = {
-  photosynthesis: {
-    id: "photosynthesis",
-    subject: "Biology",
-    topic: "Photosynthesis",
-    questions: photosynthesisQuestions,
+  "few-shot": {
+    id: "few-shot",
+    subject: "Prompt engineering",
+    topic: "Few-shot",
+    questions: fewShotQuestions,
   },
-  quadratics: {
-    id: "quadratics",
-    subject: "Mathematics",
-    topic: "Quadratics",
-    questions: quadraticsQuestions,
+  fetch: {
+    id: "fetch",
+    subject: "Web APIs",
+    topic: "HTTP",
+    questions: fetchQuestions,
   },
-  "cell-structure": {
-    id: "cell-structure",
-    subject: "Biology",
-    topic: "Cell structure",
-    questions: cellQuestions,
+  "git-basics": {
+    id: "git-basics",
+    subject: "Software engineering",
+    topic: "Git",
+    questions: gitQuestions,
   },
 };
 
-/** Scripted review for the photosynthesis mock: answers 2, 2, 0, 0 → score 2 of 4. */
-export const photosynthesisReviewAnswers = [2, 2, 0, 0];
+/** Scripted review for the few-shot mock: answers 2, 2, 0, 0 → score 2 of 4. */
+export const sampleReviewAnswers = [2, 2, 0, 0];
 
 export function demoPack(subject: string, topic: string, notes: string): StudyPack {
-  if (/cell/i.test(`${subject} ${topic} ${notes}`)) {
-    return { ...cellPack, id: "cell-structure", subject, topic: topic || cellPack.topic };
+  if (/git/i.test(`${subject} ${topic} ${notes}`)) {
+    return { ...samplePack, id: "git-basics", subject, topic: topic || samplePack.topic };
   }
 
   const sentences = notes
@@ -347,38 +349,38 @@ export function demoPack(subject: string, topic: string, notes: string): StudyPa
   };
 }
 
-export const quadraticsOutline: LessonOutline = {
+export const promptOutline: LessonOutline = {
   objectives: [
-    "Factorise a quadratic of the form x² + bx + c.",
-    "Solve the equation by setting each factor to zero.",
-    "Check answers by substitution.",
+    "State what a system prompt is allowed to decide.",
+    "Place one few-shot example under those rules.",
+    "Check that a conflicting user turn does not overwrite the rules.",
   ],
   plan: [
-    { stage: "Starter", minutes: 5, text: "Expand (x + 2)(x + 3) together. Ask what numbers multiply to 6 and add to 5." },
-    { stage: "Teach", minutes: 12, text: "Factorise x² + 7x + 12 on the board. Show the sum-product table." },
-    { stage: "Worked example", minutes: 8, text: "Solve x² − 5x + 6 = 0. Roots: x = 2, x = 3." },
-    { stage: "Practice", minutes: 10, text: "Five questions in pairs, rising difficulty." },
-    { stage: "Exit check", minutes: 5, text: "One question on paper. Collect and sort into got it / not yet." },
+    { stage: "Starter", minutes: 5, text: "Show two chats that answer the same question differently. Ask which line changed the behaviour." },
+    { stage: "Teach", minutes: 12, text: "Write a four-line system prompt on the board: role, limits, output shape, and what to refuse." },
+    { stage: "Worked example", minutes: 8, text: "Add one input and output pair. Then show a user message that asks the model to ignore the rules." },
+    { stage: "Practice", minutes: 10, text: "Pairs draft a prompt for a course tutor and mark the line that locks the course." },
+    { stage: "Exit check", minutes: 5, text: "One prompt on paper. Sort into got it / not yet." },
   ],
   notes:
-    "A quadratic equation has the form ax² + bx + c = 0. When a = 1, look for two numbers that multiply to c and add to b. Write the equation as (x + p)(x + q) = 0. If a product is zero, one of the factors must be zero, so x = −p or x = −q.",
+    "A system prompt is the standing instruction for the chat. The user message is one turn inside it. Few-shot examples show the shape of a good answer. They do not replace the rules. If a user turn says to ignore the system prompt, the rules still hold.",
   mistakes: [
-    "Mixing up signs when c is negative.",
-    "Forgetting to set the equation to zero first.",
+    "Putting the real task only in the system prompt and leaving the user turn empty.",
+    "Letting a user sentence override a safety or course rule.",
   ],
 };
 
 export const lessons: Record<string, LessonDraft> = {
-  quadratics: {
-    id: "quadratics",
-    title: "Quadratic equations by factorisation",
-    level: "SS2",
-    subject: "Mathematics",
-    topic: "Quadratic equations by factorisation",
+  "system-prompts": {
+    id: "system-prompts",
+    title: "System prompts for a course tutor",
+    level: "200L",
+    subject: "Prompt engineering",
+    topic: "System prompts",
     minutes: 40,
     classId: "ss2a",
     status: "draft",
-    outline: quadraticsOutline,
+    outline: promptOutline,
     updatedAt: "Today, 9:40",
   },
 };
@@ -390,7 +392,7 @@ export function demoOutline(input: {
   minutes: number;
   prompt?: string;
 }): LessonOutline {
-  if (/quadratic/i.test(input.topic)) return quadraticsOutline;
+  if (/system prompt|few-shot|prompt engineering/i.test(input.topic)) return promptOutline;
   const starter = Math.max(5, Math.round(input.minutes * 0.15));
   const teach = Math.max(8, Math.round(input.minutes * 0.35));
   const practice = Math.max(8, input.minutes - starter - teach - 5);
@@ -402,116 +404,116 @@ export function demoOutline(input: {
       "Check who can do a similar question alone.",
     ],
     plan: [
-      { stage: "Starter", minutes: starter, text: `Ask what the class already knows about ${input.topic}.` },
+      { stage: "Starter", minutes: starter, text: `Ask what the group already knows about ${input.topic}.` },
       { stage: "Teach", minutes: teach, text: `Teach one method for ${input.topic}. Keep the example short.${extra}` },
       { stage: "Practice", minutes: practice, text: "Pairs answer three questions. You circulate and listen." },
       { stage: "Exit check", minutes: 5, text: "One question on paper. Sort into got it / not yet." },
     ],
-    notes: `${input.level} ${input.subject}. ${input.topic} is drafted for you to edit against your scheme of work.${extra}`,
+    notes: `${input.level} ${input.subject}. ${input.topic} is a draft. Edit it against your course notes before you assign it.${extra}`,
     mistakes: [
-      "Rushing the example before the class can say the idea back.",
+      "Rushing the example before the group can say the idea back.",
       "Leaving the exit check unmarked.",
     ],
   };
 }
 
-const teacherPhotosynthesisQuestions: Question[] = [
+const teacherFewShotQuestions: Question[] = [
   question({
-    prompt: "Which gas do plants take in for photosynthesis?",
-    options: ["Oxygen", "Carbon dioxide", "Nitrogen", "Hydrogen"],
+    prompt: "Which line belongs in the system prompt?",
+    options: ["Today's homework question", "The course this tutor is allowed to answer", "The student's password", "A random temperature"],
     answerIndex: 1,
-    explanation: "Plants use carbon dioxide and water to make glucose, and release oxygen.",
-    subject: "Biology",
-    topic: "Photosynthesis",
+    explanation: "The course lock is a standing rule, so it belongs in the system prompt.",
+    subject: "Prompt engineering",
+    topic: "Few-shot",
     marks: 1,
   }, 0),
   question({
-    prompt: "Where in the leaf cell does photosynthesis happen?",
-    options: ["Nucleus", "Vacuole", "Chloroplast", "Cell wall"],
-    answerIndex: 2,
-    explanation: "Photosynthesis happens in the chloroplast.",
-    subject: "Biology",
-    topic: "Photosynthesis",
+    prompt: "A few-shot example should show",
+    options: ["The answer key for the live test", "One input and the output shape you want", "Every lecture slide", "The server logs"],
+    answerIndex: 1,
+    explanation: "Show a small input and the kind of output you want. Do not paste a live answer key.",
+    subject: "Prompt engineering",
+    topic: "Few-shot",
     marks: 1,
   }, 1),
   question({
-    prompt: "Which of these is a product of photosynthesis?",
-    options: ["Glucose", "Starch only", "Carbon dioxide", "Chlorophyll"],
+    prompt: "A user message that says 'ignore the rules' should be",
+    options: ["Treated as an untrusted turn", "Copied into the system prompt", "Used as the new course", "Stored as the answer key"],
     answerIndex: 0,
-    explanation: "Glucose is a product. Starch is how many plants store it afterwards.",
-    subject: "Biology",
-    topic: "Photosynthesis",
+    explanation: "The user turn is untrusted. It does not replace the system rules.",
+    subject: "Prompt engineering",
+    topic: "Few-shot",
     marks: 1,
   }, 2),
 ];
 
 export const teacherQuizzes: Record<string, TeacherQuiz> = {
-  photosynthesis: {
-    id: "photosynthesis",
-    title: "Photosynthesis quiz",
-    level: "SS1",
-    subject: "Biology",
-    topic: "Photosynthesis",
-    classId: "ss1a",
+  "few-shot": {
+    id: "few-shot",
+    title: "Few-shot quiz",
+    level: "200L",
+    subject: "Prompt engineering",
+    topic: "Few-shot",
+    classId: "ss2a",
     status: "reviewed",
-    questions: teacherPhotosynthesisQuestions,
+    questions: teacherFewShotQuestions,
     markingGuide: [
       {
         questionId: "theory-1",
-        prompt: "Write the word equation for photosynthesis and name two conditions it needs.",
+        prompt: "Write a four-line system prompt for a course tutor and add one few-shot example.",
         points: [
-          { text: "Carbon dioxide + water on the left", marks: 1 },
-          { text: "Glucose + oxygen on the right", marks: 1 },
-          { text: "Light energy and chlorophyll shown over the arrow", marks: 2 },
-          { text: "Any two conditions: light, chlorophyll, carbon dioxide, water, suitable temperature", marks: 2 },
+          { text: "Names the course the tutor must stay inside", marks: 1 },
+          { text: "States one limit the user turn cannot override", marks: 1 },
+          { text: "Describes the output shape", marks: 2 },
+          { text: "Gives one input and output pair that matches that shape", marks: 2 },
         ],
-        notes: "Accept the balanced chemical equation in place of the word equation. Do not award marks for oxygen as an input.",
+        notes: "Do not award marks for an example that dumps a live answer key. The system rules must come before the example.",
       },
     ],
-    assignedClassIds: [],
+    assignedClassIds: ["ss2a"],
     questionCount: 12,
     totalMarks: 22,
     timeMinutes: 25,
     reviewedCount: 3,
     updatedAt: "Yesterday",
   },
-  indices: {
-    id: "indices",
-    title: "Indices and logarithms",
-    level: "SS2",
-    subject: "Mathematics",
-    topic: "Indices and logarithms",
+  sampling: {
+    id: "sampling",
+    title: "Temperature and sampling",
+    level: "200L",
+    subject: "Prompt engineering",
+    topic: "Temperature and sampling",
     classId: "ss2a",
     status: "reviewed",
     questions: [
       question({
-        prompt: "Simplify 8^(2/3).",
-        options: ["4", "2", "16", "8"],
+        prompt: "Raising temperature usually makes the next token",
+        options: ["More random", "Always shorter", "Always the answer key", "Independent of the prompt"],
         answerIndex: 0,
-        explanation: "8^(1/3) is 2, and 2² is 4.",
-        subject: "Mathematics",
-        topic: "Indices",
+        explanation: "A higher temperature spreads probability across more tokens.",
+        subject: "Prompt engineering",
+        topic: "Temperature",
         marks: 1,
       }, 0),
       question({
-        prompt: "Which is the same as log₁₀ 1000?",
-        options: ["3", "10", "100", "1"],
+        prompt: "Temperature does not change",
+        options: ["The system rules", "How peaked the distribution is", "Which token is sampled", "The variety of wording"],
         answerIndex: 0,
-        explanation: "10³ = 1000, so the log is 3.",
-        subject: "Mathematics",
-        topic: "Logarithms",
+        explanation: "Temperature changes sampling. It does not rewrite the system prompt.",
+        subject: "Prompt engineering",
+        topic: "Temperature",
         marks: 1,
       }, 1),
     ],
     markingGuide: [
       {
         questionId: "theory-1",
-        prompt: "Evaluate log₂ 32 and show one working step.",
+        prompt: "Explain what temperature changes, and what it leaves alone. Give one example.",
         points: [
-          { text: "Writes 32 as a power of 2", marks: 1 },
-          { text: "States the answer 5", marks: 1 },
+          { text: "Says temperature changes how random the next token is", marks: 1 },
+          { text: "Says the system rules stay in place", marks: 1 },
         ],
-        notes: "Accept 2⁵ = 32 as the working step.",
+        notes: "Accept a short example that contrasts a low and a high temperature on the same prompt.",
       },
     ],
     assignedClassIds: ["ss2a"],
@@ -521,35 +523,35 @@ export const teacherQuizzes: Record<string, TeacherQuiz> = {
     reviewedCount: 2,
     updatedAt: "Thu",
   },
-  ohms: {
-    id: "ohms",
-    title: "Ohm's law theory paper",
-    level: "SS3",
-    subject: "Physics",
-    topic: "Ohm's law",
+  "status-codes": {
+    id: "status-codes",
+    title: "HTTP status codes paper",
+    level: "300L",
+    subject: "Web APIs",
+    topic: "HTTP status codes",
     classId: "ss3a",
     status: "draft",
     questions: [
       question({
-        prompt: "A lamp draws 0.5 A from a 6 V battery. What is its resistance?",
-        options: ["3 Ω", "12 Ω", "6.5 Ω", "0.08 Ω"],
+        prompt: "A client posts a new note and the server stores it. Which status fits?",
+        options: ["200", "201", "404", "500"],
         answerIndex: 1,
-        explanation: "R = V / I = 6 / 0.5 = 12 Ω.",
-        subject: "Physics",
-        topic: "Ohm's law",
+        explanation: "201 Created is the status for a successful create.",
+        subject: "Web APIs",
+        topic: "HTTP status codes",
         marks: 1,
       }, 0),
     ],
     markingGuide: [
       {
         questionId: "theory-1",
-        prompt: "State Ohm's law and calculate the current when 12 V is applied across a 4 Ω resistor.",
+        prompt: "A fetch call returns 404. State what that means and name one check you would make.",
         points: [
-          { text: "States V = IR, or current is proportional to voltage at constant temperature", marks: 2 },
-          { text: "Rearranges to I = V / R", marks: 1 },
-          { text: "Substitutes 12 / 4 and gets 3 A with the unit", marks: 2 },
+          { text: "Says the path does not match a resource", marks: 2 },
+          { text: "Names a check: the URL, the method, or the route", marks: 1 },
+          { text: "Does not treat 404 as a server crash", marks: 2 },
         ],
-        notes: "Do not award the calculation mark if the unit is missing. Constant temperature should be mentioned for the full statement.",
+        notes: "A 500 is the crash. A 404 is a missing route or id. Do not award the last point if those are swapped.",
       },
     ],
     assignedClassIds: [],
@@ -567,9 +569,9 @@ export function demoTeacherQuiz(input: {
   topic: string;
   prompt?: string;
 }): Pick<TeacherQuiz, "questions" | "markingGuide" | "timeMinutes" | "totalMarks" | "questionCount" | "reviewedCount"> {
-  if (/photosynthesis/i.test(input.topic)) {
-    const sample = teacherQuizzes.photosynthesis;
-    if (!sample) throw new Error("Missing photosynthesis sample");
+  if (/few-shot|system prompt/i.test(input.topic)) {
+    const sample = teacherQuizzes["few-shot"];
+    if (!sample) throw new Error("Missing few-shot sample");
     return sample;
   }
   const note = input.prompt ? ` ${input.prompt}` : "";
@@ -583,7 +585,7 @@ export function demoTeacherQuiz(input: {
         "It has no definition.",
       ],
       answerIndex: 0,
-      explanation: `Edit this key before class. Demo mode only sketches ${input.topic}.${note}`,
+      explanation: `Edit this key before you assign it. Demo mode only sketches ${input.topic}.${note}`,
       subject: input.subject,
       topic: input.topic,
       marks: 1,
@@ -597,7 +599,7 @@ export function demoTeacherQuiz(input: {
         "Leave the answer blank",
       ],
       answerIndex: 0,
-      explanation: "Use this slot for a real question from your scheme of work.",
+      explanation: "Use this slot for a real question from your course notes.",
       subject: input.subject,
       topic: input.topic,
       marks: 1,
@@ -614,7 +616,7 @@ export function demoTeacherQuiz(input: {
           { text: "Gives a relevant example", marks: 2 },
           { text: "Uses the right units or terms", marks: 1 },
         ],
-        notes: `Check this mark scheme against your scheme of work before you assign it.${note}`,
+        notes: `Check this mark scheme against your course notes before you assign it.${note}`,
       },
     ],
     timeMinutes: 20,
@@ -625,17 +627,17 @@ export function demoTeacherQuiz(input: {
 }
 
 export const classes: TeacherClass[] = [
-  { id: "ss2a", name: "SS2 A", level: "SS2", subject: "Mathematics", studentCount: 34 },
-  { id: "ss2b", name: "SS2 B", level: "SS2", subject: "Mathematics", studentCount: 31 },
-  { id: "ss1a", name: "SS1 A", level: "SS1", subject: "Biology", studentCount: 36 },
-  { id: "ss3a", name: "SS3 A", level: "SS3", subject: "Physics", studentCount: 28 },
+  { id: "ss2a", name: "CSC 201 A", level: "200L", subject: "Prompt engineering", studentCount: 34 },
+  { id: "ss2b", name: "CSC 201 B", level: "200L", subject: "Prompt engineering", studentCount: 31 },
+  { id: "ss1a", name: "CSC 101 A", level: "100L", subject: "Software engineering", studentCount: 36 },
+  { id: "ss3a", name: "CSC 301 A", level: "300L", subject: "Web APIs", studentCount: 28 },
 ];
 
 export const generations: Generation[] = [
-  { id: "quadratics", type: "lesson", title: "Quadratic equations by factorisation", classId: "ss2a", status: "draft", updatedAt: "Today, 9:40" },
-  { id: "photosynthesis", type: "quiz", title: "Photosynthesis — 15 questions", classId: "ss1a", status: "reviewed", updatedAt: "Yesterday" },
-  { id: "ohms", type: "marking_guide", title: "Ohm's law theory paper", classId: "ss3a", status: "draft", updatedAt: "Fri" },
-  { id: "indices", type: "quiz", title: "Indices and logarithms", classId: "ss2a", status: "reviewed", updatedAt: "Thu" },
+  { id: "system-prompts", type: "lesson", title: "System prompts for a course tutor", classId: "ss2a", status: "draft", updatedAt: "Today, 9:40" },
+  { id: "few-shot", type: "quiz", title: "Few-shot examples — 12 questions", classId: "ss2a", status: "reviewed", updatedAt: "Yesterday" },
+  { id: "status-codes", type: "marking_guide", title: "HTTP status codes paper", classId: "ss3a", status: "draft", updatedAt: "Fri" },
+  { id: "sampling", type: "quiz", title: "Temperature and sampling", classId: "ss2a", status: "reviewed", updatedAt: "Thu" },
 ];
 
 export const classSnapshots: Record<string, ClassSnapshot> = {
@@ -644,16 +646,16 @@ export const classSnapshots: Record<string, ClassSnapshot> = {
     quizzesTaken: 142,
     classAverage: 63,
     topics: [
-      { topic: "Completing the square", avg: 48, attempts: 31 },
-      { topic: "Quadratic formula", avg: 54, attempts: 28 },
-      { topic: "Indices", avg: 66, attempts: 34 },
-      { topic: "Factorisation", avg: 72, attempts: 33 },
-      { topic: "Linear inequalities", avg: 81, attempts: 30 },
+      { topic: "Few-shot examples", avg: 48, attempts: 31 },
+      { topic: "Temperature", avg: 54, attempts: 28 },
+      { topic: "System prompts", avg: 66, attempts: 34 },
+      { topic: "Output shape", avg: 72, attempts: 33 },
+      { topic: "Course lock", avg: 81, attempts: 30 },
     ],
     missed: [
-      { prompt: "Write x² + 6x + 2 as (x + a)² + b", topic: "Completing the square", wrongPct: 71 },
-      { prompt: "Solve 2x² − 3x − 5 = 0 with the formula", topic: "Quadratic formula", wrongPct: 58 },
-      { prompt: "Simplify 8^(2/3)", topic: "Indices", wrongPct: 44 },
+      { prompt: "Put one input and output pair under the system rules", topic: "Few-shot examples", wrongPct: 71 },
+      { prompt: "Say what temperature changes and what it leaves alone", topic: "Temperature", wrongPct: 58 },
+      { prompt: "Name the line that locks the tutor to one course", topic: "System prompts", wrongPct: 44 },
     ],
     supportCount: 6,
   },
@@ -662,12 +664,12 @@ export const classSnapshots: Record<string, ClassSnapshot> = {
     quizzesTaken: 88,
     classAverage: 71,
     topics: [
-      { topic: "Factorisation", avg: 76, attempts: 29 },
-      { topic: "Linear inequalities", avg: 69, attempts: 27 },
-      { topic: "Indices", avg: 58, attempts: 24 },
+      { topic: "Output shape", avg: 76, attempts: 29 },
+      { topic: "Course lock", avg: 69, attempts: 27 },
+      { topic: "Temperature", avg: 58, attempts: 24 },
     ],
     missed: [
-      { prompt: "Simplify 8^(2/3)", topic: "Indices", wrongPct: 49 },
+      { prompt: "Say what temperature changes and what it leaves alone", topic: "Temperature", wrongPct: 49 },
     ],
     supportCount: 3,
   },
@@ -676,12 +678,12 @@ export const classSnapshots: Record<string, ClassSnapshot> = {
     quizzesTaken: 64,
     classAverage: 67,
     topics: [
-      { topic: "Photosynthesis", avg: 71, attempts: 30 },
-      { topic: "Cell structure", avg: 64, attempts: 28 },
-      { topic: "Diffusion", avg: 52, attempts: 22 },
+      { topic: "Git commits", avg: 71, attempts: 30 },
+      { topic: "Testing", avg: 64, attempts: 28 },
+      { topic: "Branches", avg: 52, attempts: 22 },
     ],
     missed: [
-      { prompt: "Name the gas plants take in", topic: "Photosynthesis", wrongPct: 38 },
+      { prompt: "Name the command that stages a file", topic: "Git commits", wrongPct: 38 },
     ],
     supportCount: 4,
   },
@@ -690,11 +692,11 @@ export const classSnapshots: Record<string, ClassSnapshot> = {
     quizzesTaken: 41,
     classAverage: 74,
     topics: [
-      { topic: "Ohm's law", avg: 77, attempts: 26 },
-      { topic: "Motion", avg: 69, attempts: 21 },
+      { topic: "HTTP status codes", avg: 77, attempts: 26 },
+      { topic: "Fetch", avg: 69, attempts: 21 },
     ],
     missed: [
-      { prompt: "State the unit of resistance", topic: "Ohm's law", wrongPct: 22 },
+      { prompt: "State what 404 means", topic: "HTTP status codes", wrongPct: 22 },
     ],
     supportCount: 2,
   },
@@ -709,6 +711,13 @@ export function generationHref(item: Generation) {
 export function classLabel(classId: string) {
   const found = classes.find((item) => item.id === classId);
   if (!found) return classId;
-  const subject = found.subject === "Mathematics" ? "Maths" : found.subject;
-  return `${found.level} ${subject}`;
+  const subject =
+    found.subject === "Prompt engineering"
+      ? "Prompts"
+      : found.subject === "Software engineering"
+        ? "Software"
+        : found.subject === "Machine learning"
+          ? "ML"
+          : found.subject;
+  return `${found.name} · ${subject}`;
 }

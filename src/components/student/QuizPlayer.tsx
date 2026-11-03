@@ -5,7 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import styles from "@/app/student/quiz/quiz.module.css";
 import { postJson } from "@/lib/api-client";
 import { readStore } from "@/lib/browser-store";
-import { photosynthesisReviewAnswers } from "@/lib/demo";
+import { sampleReviewAnswers } from "@/lib/demo";
 import type { Attempt, Question, Recommendation } from "@/lib/types";
 
 type Quiz = { id: string; subject: string; topic: string; questions: Question[] };
@@ -13,10 +13,10 @@ type ScoreResponse = { demo?: boolean; attempt: Attempt; recommendation: Recomme
 
 function tutorHref(subject: string) {
   const text = subject.toLowerCase();
-  if (text.includes("bio")) return "/student/tutor/biology";
-  if (text.includes("math")) return "/student/tutor/maths";
-  if (text.includes("physic")) return "/student/tutor/physics";
-  if (text.includes("english")) return "/student/tutor/english";
+  if (text.includes("prompt")) return "/student/tutor/prompts";
+  if (text.includes("software") || text.includes("python") || text.includes("git")) return "/student/tutor/python";
+  if (text.includes("web") || text.includes("http") || text.includes("api")) return "/student/tutor/http";
+  if (text.includes("machine") || text.includes("model")) return "/student/tutor/models";
   return "/student/tutors";
 }
 
@@ -44,20 +44,20 @@ export function QuizPlayer({
     const current = stored[quizId] ?? fallback;
     if (stored[quizId]) setQuiz(stored[quizId]);
     const review = startOnReview || window.location.hash === "#review";
-    if (!review || !current || quizId !== "photosynthesis") return;
-    const wrong = photosynthesisReviewAnswers.flatMap((answer, item) =>
+    if (!review || !current || quizId !== "few-shot") return;
+    const wrong = sampleReviewAnswers.flatMap((answer, item) =>
       answer === current.questions[item]?.answerIndex ? [] : [item],
     );
-    setScore(photosynthesisReviewAnswers.length - wrong.length);
+    setScore(sampleReviewAnswers.length - wrong.length);
     setMissed(wrong);
     setDone(true);
     void postJson<{ recommendation: Recommendation }>("/api/recommend", {
       subject: current.subject,
       topic: current.topic,
-      score: photosynthesisReviewAnswers.length - wrong.length,
+      score: sampleReviewAnswers.length - wrong.length,
       total: current.questions.length,
-      tutorHref: "/student/tutor/biology",
-      quizHref: "/student/quiz/photosynthesis",
+      tutorHref: "/student/tutor/prompts",
+      quizHref: "/student/quiz/few-shot",
     })
       .then((data) => setRecommendation(data.recommendation))
       .catch(() => setRecommendation(null));

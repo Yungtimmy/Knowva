@@ -27,11 +27,11 @@ export function LessonEditor({
   presetTopic?: string;
 }) {
   const router = useRouter();
-  const [level, setLevel] = useState(initial?.level ?? "SS2");
-  const [subject, setSubject] = useState(initial?.subject ?? "Mathematics");
+  const [level, setLevel] = useState(initial?.level ?? "200L");
+  const [subject, setSubject] = useState(initial?.subject ?? "Prompt engineering");
   const [topic, setTopic] = useState(initial?.topic ?? presetTopic);
   const [minutes, setMinutes] = useState(String(initial?.minutes ?? 40));
-  const [change, setChange] = useState("Add one real-life example about area of a rectangle.");
+  const [change, setChange] = useState("Add one worked example with a real system prompt.");
   const [draft, setDraft] = useState<LessonDraft | null>(initial);
   const [busy, setBusy] = useState(false);
   const [note, setNote] = useState("");
@@ -124,20 +124,20 @@ export function LessonEditor({
       <div className="card">
         <div className="form">
           <div>
-            <label htmlFor="class">Class</label>
+            <label htmlFor="class">Level</label>
             <select id="class" defaultValue={level}>
-              <option>SS1</option>
-              <option>SS2</option>
-              <option>SS3</option>
+              <option>100L</option>
+              <option>200L</option>
+              <option>300L</option>
             </select>
           </div>
           <div>
-            <label htmlFor="subject">Subject</label>
+            <label htmlFor="subject">Course</label>
             <select id="subject" value={subject} onChange={(event) => setSubject(event.target.value)}>
-              <option>Mathematics</option>
-              <option>Biology</option>
-              <option>Physics</option>
-              <option>English</option>
+              <option>Prompt engineering</option>
+              <option>Software engineering</option>
+              <option>Web APIs</option>
+              <option>Machine learning</option>
             </select>
           </div>
           <div>
@@ -159,7 +159,7 @@ export function LessonEditor({
       <div className="review">
         <i />
         <div>
-          <b>Review and edit before classroom use.</b> Knowva drafted this from your topic. Check facts, worked examples and timing against your scheme of work. Click any text to edit it.
+          <b>Review and edit before you assign it.</b> Knowva drafted this from your topic. Check facts, worked examples and timing against your course notes. Click any text to edit it.
         </div>
       </div>
       {note ? <p className="meta" style={{ marginTop: -8, marginBottom: 12 }}>{note}</p> : null}

@@ -33,8 +33,8 @@ export function Mascot({
 }
 
 export function mascotFor(subject: string): { variant: keyof typeof FILLS; smile: boolean; tile: string } {
-  if (subject === "Mathematics") return { variant: "blue", smile: true, tile: "#F7F4EC" };
-  if (subject === "Biology") return { variant: "orange", smile: false, tile: "#F7F4EC" };
-  if (subject === "Physics") return { variant: "yellow", smile: true, tile: "#F7F4EC" };
+  if (subject === "Prompt engineering") return { variant: "blue", smile: true, tile: "#F7F4EC" };
+  if (subject === "Software engineering") return { variant: "orange", smile: false, tile: "#F7F4EC" };
+  if (subject === "Web APIs") return { variant: "yellow", smile: true, tile: "#F7F4EC" };
   return { variant: "ink", smile: false, tile: "#1C1B19" };
 }

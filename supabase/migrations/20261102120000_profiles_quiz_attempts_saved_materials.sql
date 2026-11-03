@@ -49,6 +49,14 @@ revoke all on public.quiz_attempts from anon, authenticated;
 revoke all on public.saved_materials from anon, authenticated;
 
 grant select, update on public.profiles to authenticated;
+
+do $$
+begin
+  if exists (select 1 from pg_roles where rolname = 'service_role') then
+    grant select, update on public.profiles to service_role;
+  end if;
+end;
+$$;
 grant select, insert, update, delete on public.quiz_attempts to authenticated;
 grant select, insert, update, delete on public.saved_materials to authenticated;
 
@@ -149,10 +157,11 @@ set search_path = ''
 as $$
 begin
   if new.role is distinct from old.role then
+    -- Legacy service-role JWTs set the role claim. New sb_secret_ keys connect as service_role.
     if coalesce(auth.jwt() ->> 'role', '') = 'service_role' then
       return new;
     end if;
-    if auth.jwt() is null and current_user in ('postgres', 'supabase_admin') then
+    if current_user in ('service_role', 'postgres', 'supabase_admin') then
       return new;
     end if;
     raise exception 'role cannot be changed from the client';

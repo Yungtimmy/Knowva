@@ -18,14 +18,14 @@ export function TeacherShell({ children }: { children: React.ReactNode }) {
         <Link className="logo" href="/teacher">
           Knowva
         </Link>
-        <span className="role">Teacher</span>
+        <span className="role">Lecturer</span>
         {LINKS.map((link) => (
           <Link key={link.label} className={link.match(pathname) ? "nav on" : "nav"} href={link.href}>
             <span />
             {link.label}
           </Link>
         ))}
-        <p className="foot">Every draft is a starting point. Review and edit before classroom use.</p>
+        <p className="foot">Every draft is a starting point. Review and edit before you assign it.</p>
       </aside>
       <main>{children}</main>
     </div>

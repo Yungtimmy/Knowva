@@ -12,7 +12,10 @@ export default function LoginPage() {
   const [role, setRole] = useState<"student" | "teacher">("student");
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
-  const configured = Boolean(process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
+  const configured = Boolean(
+    process.env.NEXT_PUBLIC_SUPABASE_URL &&
+      (process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY),
+  );
 
   async function onSubmit(event: FormEvent) {
     event.preventDefault();
@@ -100,7 +103,7 @@ export default function LoginPage() {
       <p style={{ marginTop: 12 }}>
         <Link href="/student">Continue as Ada</Link>
         {" · "}
-        <Link href="/teacher">Continue as Mrs. Adeyemi</Link>
+        <Link href="/teacher">Continue as Dr. Adeyemi</Link>
       </p>
     </main>
   );
