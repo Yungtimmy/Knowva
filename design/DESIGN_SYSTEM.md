@@ -1,8 +1,6 @@
 # Knowva AI — Design System v1 (2 Nov 2026)
 Source: /workspace/knowva/landing-reference.jpg, PRD.txt. Tokens: tokens.css.
 
-MVP audience is university students, prompt engineers, and people learning developer tools. The visual system below stays as specified. Copy speaks to courses, labs, and building, not secondary-school exams.
-
 ## Palette
 | Token | Hex | Use |
 |---|---|---|
@@ -34,7 +32,7 @@ Blobby clouds (blue, orange, yellow), two oval eyes with black pupils looking si
 - Labels are verbs: "Create a Tutor", "Start quiz", "Make notes".
 
 ## Tone bible
-Plain, friendly, direct. Short sentences. No exclamation marks in UI. Speak to the outcome (a working example, time saved, understanding).
+Plain, friendly, direct, like a good older sibling who tutors. Short sentences. No exclamation marks in UI. Speak to the outcome (grades, time saved, understanding).
 Banned words: seamless, empower, unlock, revolutionize, leverage, elevate, supercharge, cutting-edge, game-changer, delve.
 
 ## Rejection list
@@ -47,3 +45,10 @@ No gradient text · no scale(1.02) hover · no pure #000/#FFF as only colors · 
 ## Student IA (PRD v1)
 5-tab bar (all student/*.html): Home → dashboard.html · Tutors → tutors.html (+ create-tutor.html, tutor.html) · Learn → learn.html (Discover | Saved; materials.html) · Tests → test-centre.html (+ test-take.html, test-results.html; quiz.html = informal Practice) · Progress → progress.html.
 test-take.html has no tabbar on purpose: tutor chat is locked during a test.
+
+## Product direction (Nov 2026)
+- Student-only product. AI are the tutors — no teacher/lecturer sign-in, CTAs, or nav. `teacher/` is archive only; never link to it.
+- Never label UI "for students"; the audience is implied.
+- Brand mark: the three blobby eye-clouds (blue #2412B0, orange #FF4A1C, yellow #FBE062). Show them in the landing hero, on auth pages (floating + card cluster), and as a small `.brand-clouds` cluster in student page headers.
+- Auth: Google-only. Full-width white pill, 1.5px ink border, multicolor Google "G" SVG + "Continue with Google". No underlined text links as primary actions; sign-in/sign-up swap is secondary text. See `login.html`, `signup.html`.
+- Landing nav: Features + Pricing links, Sign in (ghost pill) + Sign up (orange pill).

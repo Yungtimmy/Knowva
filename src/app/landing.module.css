@@ -30,12 +30,13 @@
 
 .auth { display: flex; align-items: center; gap: 8px; }
 .signIn, .signUp {
+  display: inline-block;
   text-decoration: none;
   font-weight: 600;
-  font-size: 14px;
+  font-size: 15px;
   line-height: 1;
   border-radius: 999px;
-  padding: 8px 14px;
+  padding: 9px 18px;
   white-space: nowrap;
 }
 .signUp {
@@ -46,8 +47,9 @@
 .signUp:hover { transform: translateY(2px); box-shadow: 0 1px 0 var(--kn-orange-deep); }
 .signIn {
   color: var(--kn-ink);
-  background: transparent;
+  background: var(--kn-surface);
   border: 1.5px solid var(--kn-ink);
+  box-shadow: none;
 }
 .signIn:hover { transform: translateY(2px); }
 
@@ -155,26 +157,25 @@
 .feat h3 { font-weight: 600; font-size: 20px; margin-bottom: 6px; }
 .feat p { color: var(--kn-ink-2); line-height: 1.5; }
 
-.who { display: grid; gap: 16px; padding: 32px 0; }
-.card { border-radius: 20px; padding: 28px; border: 1px solid var(--kn-line); }
-.card h3 { font-size: 22px; font-weight: 600; margin-bottom: 8px; }
-.card p { line-height: 1.5; color: var(--kn-ink-2); }
-.sec {
-  display: inline-block;
-  margin-top: 18px;
-  padding: 10px 20px;
-  border: 1.5px solid var(--kn-ink);
-  border-radius: 999px;
-  font-weight: 500;
-  color: var(--kn-ink);
-  text-decoration: none;
+.cta {
+  text-align: center;
+  margin: 32px 0;
+  padding: 36px 24px;
+  border-radius: 24px;
+  background: #EEEBFA;
+  border: 1px solid var(--kn-line);
 }
+.cta h3 { font-size: 26px; font-weight: 600; margin: 12px 0 8px; }
+.cta p { color: var(--kn-ink-2); margin-bottom: 22px; }
 .foot { padding: 40px 0; text-align: center; color: var(--kn-ink-3); font-size: 14px; }
+
+@media (max-width: 520px) {
+  .signIn { display: none; }
+}
 
 @media (max-width: 420px) {
   .nav { padding: 10px 12px; }
   .logo { font-size: 22px; }
-  .signIn, .signUp { font-size: 13px; padding: 7px 10px; }
   .navr { gap: 8px; }
 }
 
@@ -187,6 +188,5 @@
   .linksOpen { position: static; flex-direction: row; background: none; border: 0; padding: 0; gap: 28px; }
   .burger { display: none; }
   .hero { padding-top: 64px; }
-  .who { grid-template-columns: 1fr 1fr; }
   .feats { display: grid; grid-template-columns: 1fr 1fr; column-gap: 48px; }
 }

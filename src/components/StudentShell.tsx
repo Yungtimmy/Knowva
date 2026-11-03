@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { KnowvaClouds } from "@/components/KnowvaClouds";
 
 const TABS = [
   { id: "home", href: "/student", label: "Home" },
@@ -64,6 +65,7 @@ export function StudentShell({ children }: { children: React.ReactNode }) {
               Knowva
             </Link>
           )}
+          {kind === "lock" ? null : <KnowvaClouds size="brand" />}
           {kind === "lock" ? (
             <span className="meta">Untimed</span>
           ) : (
@@ -75,7 +77,7 @@ export function StudentShell({ children }: { children: React.ReactNode }) {
         {children}
       </main>
       {kind === "lock" ? null : (
-        <nav className="tabbar" aria-label="Student">
+        <nav className="tabbar" aria-label="Knowva">
           {TABS.map((tab) => (
             <Link
               key={tab.id}

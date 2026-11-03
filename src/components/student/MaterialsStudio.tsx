@@ -74,12 +74,12 @@ export function MaterialsStudio({
         </svg>
       </section>
       <form className="card" onSubmit={onSubmit}>
-        <label>Course and topic</label>
-        <div className="fields" style={{ marginBottom: 10 }}>
+        <label>Subject and topic</label>
+        <div className="two" style={{ marginBottom: 10 }}>
           <input
             value={subject}
             list="pack-subjects"
-            aria-label="Course"
+            aria-label="Subject"
             onChange={(event) => setSubject(event.target.value)}
           />
           <input value={topic} onChange={(event) => setTopic(event.target.value)} aria-label="Topic" />

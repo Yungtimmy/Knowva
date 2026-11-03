@@ -25,15 +25,8 @@ export async function GET(request: Request) {
     return NextResponse.redirect(`${origin}/login?error=${encodeURIComponent(error.message)}`);
   }
 
-  const destination = next || (await homeFor(supabase));
+  const destination = next || "/student";
   const response = NextResponse.redirect(`${origin}${destination}`);
   response.cookies.set("knowva_next", "", { path: "/", maxAge: 0 });
   return response;
-}
-
-async function homeFor(supabase: NonNullable<Awaited<ReturnType<typeof createClient>>>) {
-  const { data } = await supabase.auth.getUser();
-  if (!data.user) return "/student";
-  const profile = await supabase.from("profiles").select("role").eq("id", data.user.id).maybeSingle();
-  return profile.data?.role === "teacher" ? "/teacher" : "/student";
 }
