@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
+import { KnowvaClouds } from "@/components/KnowvaClouds";
 import styles from "./landing.module.css";
 
 const BLOB =
@@ -20,18 +21,17 @@ export default function LandingPage() {
           Knowva
         </Link>
         <div className={styles.navr}>
+          <div className={open ? `${styles.links} ${styles.linksOpen}` : styles.links}>
+            <a href="#features">Features</a>
+            <a href="#pricing">Pricing</a>
+          </div>
           <div className={styles.auth}>
-            <Link className={styles.signUp} href="/login?mode=signup">
-              Sign up
-            </Link>
             <Link className={styles.signIn} href="/login">
               Sign in
             </Link>
-          </div>
-          <div className={open ? `${styles.links} ${styles.linksOpen}` : styles.links}>
-            <a href="#for-students">For students</a>
-            <a href="#for-teachers">For lecturers</a>
-            <a href="#pricing">Pricing</a>
+            <Link className={styles.signUp} href="/signup">
+              Sign up
+            </Link>
           </div>
           <svg className={styles.moon} width="20" height="20" viewBox="0 0 24 24" aria-hidden="true">
             <path d="M20 15A8 8 0 0 1 9 4a8 8 0 1 0 11 11Z" fill="#4A4766" />
@@ -45,41 +45,19 @@ export default function LandingPage() {
       </nav>
 
       <section className={styles.hero}>
-        <div className={styles.clouds} aria-hidden="true">
-          <svg width="110" height="90" viewBox="0 0 110 90">
-            <path d={BLOB} fill="#2412B0" />
-            <ellipse cx="44" cy="40" rx="7" ry="10" fill="#fff" />
-            <ellipse cx="60" cy="38" rx="7" ry="10" fill="#fff" />
-            <circle cx="41" cy="42" r="4" />
-            <circle cx="57" cy="40" r="4" />
-          </svg>
-          <svg width="150" height="120" viewBox="0 0 110 90" style={{ position: "relative", zIndex: 2, marginTop: 10 }}>
-            <path d={BLOB} fill="#FF4A1C" />
-            <ellipse cx="46" cy="42" rx="7" ry="10" fill="#fff" />
-            <ellipse cx="62" cy="42" rx="7" ry="10" fill="#fff" />
-            <circle cx="43" cy="45" r="4" />
-            <circle cx="59" cy="45" r="4" />
-          </svg>
-          <svg width="105" height="86" viewBox="0 0 110 90">
-            <path d={BLOB} fill="#FBE062" />
-            <ellipse cx="46" cy="38" rx="7" ry="10" fill="#fff" />
-            <ellipse cx="62" cy="38" rx="7" ry="10" fill="#fff" />
-            <circle cx="48" cy="40" r="4" />
-            <circle cx="64" cy="40" r="4" />
-          </svg>
-        </div>
+        <KnowvaClouds size="hero" />
         <h1>
-          Learn the tools
+          Learn faster
           <br />
-          Build with them
+          Get better grades
         </h1>
         <p className={styles.sub}>
-          A course tutor for university students and people learning to build. It explains the idea, turns notes into practice, and shows what to work on next.
+          A personal AI tutor that explains your lessons, turns notes into practice, and shows you what to revise next.
         </p>
-        <Link className={styles.btn} href="/login?mode=signup&next=/student/tutor">
+        <Link className={styles.btn} href="/signup?next=/student/tutors/new">
           Create a Tutor
         </Link>
-        <p className={styles.meta}>One tutor for each course you are taking.</p>
+        <p className={styles.meta}>One tutor for every subject you take.</p>
       </section>
 
       <section className={styles.beat}>
@@ -107,36 +85,36 @@ export default function LandingPage() {
             Understand any question, <em>step by step</em>
           </h2>
           <div className={styles.chat}>
-            <div className={`${styles.m} ${styles.me}`}>Why does a system prompt sit above the user message?</div>
+            <div className={`${styles.m} ${styles.me}`}>Why does the quadratic formula have ± in it?</div>
             <div className={`${styles.m} ${styles.ai}`}>
-              <small>Prompt tutor</small>
-              A system prompt sets the rules for the whole chat. The user message is one turn inside those rules. When they conflict, the system rules win. Want to try one?
+              <small>Maths tutor</small>
+              A quadratic curve can cross the x-axis in two places. The ± gives you both: one answer adds the square root, the other subtracts it. Want to try one?
               <div className={styles.quiz}>
-                <span>Write a 4-line system prompt</span>
-                <span>Show a bad example</span>
+                <span>Solve x² − 5x + 6 = 0</span>
+                <span>Show me a graph</span>
               </div>
             </div>
             <div className={styles.input}>
-              <span>Ask your prompt tutor…</span>
+              <span>Ask your Biology tutor…</span>
               <i />
             </div>
           </div>
         </div>
       </div>
 
-      <section className={styles.feats}>
+      <section className={styles.feats} id="features">
         <article className={styles.feat}>
           <div className={styles.n} style={{ background: "#FFE3D8", color: "#C7360F" }}>1</div>
           <div>
             <h3>A tutor that teaches, not just answers</h3>
-            <p>It explains in small steps, checks you understood, and stays on the course you picked.</p>
+            <p>It explains in small steps, checks you understood, and adjusts to your class level.</p>
           </div>
         </article>
         <article className={styles.feat}>
           <div className={styles.n} style={{ background: "#E6E3F7", color: "#2412B0" }}>2</div>
           <div>
             <h3>Notes in, study pack out</h3>
-            <p>Paste lecture notes or a README and get a summary, flashcards, and key terms.</p>
+            <p>Upload class notes and get a summary, flashcards, and key terms in under a minute.</p>
           </div>
         </article>
         <article className={styles.feat}>
@@ -149,29 +127,21 @@ export default function LandingPage() {
         <article className={styles.feat}>
           <div className={styles.n} style={{ background: "#E8E3D6", color: "#1C1B19" }}>4</div>
           <div>
-            <h3>See what to practise next</h3>
-            <p>Your desk tracks scores by topic and points at the weakest one first.</p>
+            <h3>See what to revise next</h3>
+            <p>Your dashboard tracks scores by topic and points to the weakest one first.</p>
           </div>
         </article>
       </section>
 
-      <section className={styles.who}>
-        <div className={styles.card} id="for-students" style={{ background: "#EEEBFA" }}>
-          <h3>For students</h3>
-          <p>University courses, prompt engineering, and developer skills. Study at your pace, on your phone.</p>
-          <Link className={styles.sec} href="/login?next=/student">
-            Start learning
-          </Link>
-        </div>
-        <div className={styles.card} id="for-teachers" style={{ background: "#FDF6D6" }}>
-          <h3>For lecturers</h3>
-          <p>Session outlines, quizzes and marking guides from your own material, ready to edit.</p>
-          <Link className={styles.sec} href="/login?next=/teacher/lesson/new">
-            Draft an outline
-          </Link>
-        </div>
+      <section className={styles.cta} id="pricing">
+        <KnowvaClouds size="cta" />
+        <h3>Your AI tutors are ready when you are.</h3>
+        <p>Exam prep for WAEC, GCSE and beyond. Free to start, on your phone.</p>
+        <Link className={styles.btn} href="/signup?next=/student">
+          Start learning free
+        </Link>
       </section>
-      <footer className={styles.foot} id="pricing">
+      <footer className={styles.foot}>
         © 2026 Knowva AI · Learn Smarter. Grow Further.
       </footer>
     </div>

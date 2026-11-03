@@ -1,13 +1,6 @@
-import { DesignStyles } from "@/components/DesignStyles";
-import { TeacherShell } from "@/components/TeacherShell";
-import { requireSignedIn } from "@/lib/require-user";
+import { redirect } from "next/navigation";
 
-export default async function TeacherLayout({ children }: { children: React.ReactNode }) {
-  await requireSignedIn();
-  return (
-    <>
-      <DesignStyles href="/design/teacher/teacher.css" />
-      <TeacherShell>{children}</TeacherShell>
-    </>
-  );
+export default function TeacherLayout({ children }: { children: React.ReactNode }) {
+  void children;
+  redirect("/student");
 }

@@ -6,7 +6,7 @@ export const metadata: Metadata = {
     default: "Knowva AI",
     template: "%s · Knowva",
   },
-  description: "A course tutor for university work and developer skills. It explains a topic, turns notes into practice, and shows what to work on next.",
+  description: "A personal AI tutor that explains your lessons, turns notes into practice, and shows you what to revise next.",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

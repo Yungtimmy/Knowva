@@ -127,7 +127,7 @@ export default function StudentHomePage() {
         <h1>
           {hello}, Ada
         </h1>
-        <p>Your course tutors are on the desk. Pick one and keep going.</p>
+        <p>Your tutors are on the desk. Pick one and keep going.</p>
       </section>
       {desk ? (
         <div className="dash-grid">

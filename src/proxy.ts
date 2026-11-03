@@ -2,8 +2,12 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import { safeNextPath } from "@/lib/safe-next";
 
+function isTeacherPage(pathname: string) {
+  return pathname === "/teacher" || pathname.startsWith("/teacher/");
+}
+
 function isCorePage(pathname: string) {
-  return pathname === "/student" || pathname.startsWith("/student/") || pathname === "/teacher" || pathname.startsWith("/teacher/");
+  return pathname === "/student" || pathname.startsWith("/student/");
 }
 
 function isCoreApi(pathname: string) {
@@ -32,6 +36,12 @@ function loginRedirect(request: NextRequest, session: NextResponse) {
 
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
+  if (isTeacherPage(pathname)) {
+    const url = request.nextUrl.clone();
+    url.pathname = "/student";
+    url.search = "";
+    return NextResponse.redirect(url);
+  }
   const corePage = isCorePage(pathname);
   const coreApi = isCoreApi(pathname);
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim();
