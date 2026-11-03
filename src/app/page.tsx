@@ -20,12 +20,20 @@ export default function LandingPage() {
           Knowva
         </Link>
         <div className={styles.navr}>
+          <div className={styles.auth}>
+            <Link className={styles.signUp} href="/login?mode=signup">
+              Sign up
+            </Link>
+            <Link className={styles.signIn} href="/login">
+              Sign in
+            </Link>
+          </div>
           <div className={open ? `${styles.links} ${styles.linksOpen}` : styles.links}>
             <a href="#for-students">For students</a>
             <a href="#for-teachers">For lecturers</a>
             <a href="#pricing">Pricing</a>
           </div>
-          <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true">
+          <svg className={styles.moon} width="20" height="20" viewBox="0 0 24 24" aria-hidden="true">
             <path d="M20 15A8 8 0 0 1 9 4a8 8 0 1 0 11 11Z" fill="#4A4766" />
           </svg>
           <button className={styles.burger} type="button" aria-label="Menu" aria-expanded={open} onClick={() => setOpen((value) => !value)}>
@@ -68,7 +76,7 @@ export default function LandingPage() {
         <p className={styles.sub}>
           A course tutor for university students and people learning to build. It explains the idea, turns notes into practice, and shows what to work on next.
         </p>
-        <Link className={styles.btn} href="/student/tutor">
+        <Link className={styles.btn} href="/login?mode=signup&next=/student/tutor">
           Create a Tutor
         </Link>
         <p className={styles.meta}>One tutor for each course you are taking.</p>
@@ -151,14 +159,14 @@ export default function LandingPage() {
         <div className={styles.card} id="for-students" style={{ background: "#EEEBFA" }}>
           <h3>For students</h3>
           <p>University courses, prompt engineering, and developer skills. Study at your pace, on your phone.</p>
-          <Link className={styles.sec} href="/student">
+          <Link className={styles.sec} href="/login?next=/student">
             Start learning
           </Link>
         </div>
         <div className={styles.card} id="for-teachers" style={{ background: "#FDF6D6" }}>
           <h3>For lecturers</h3>
           <p>Session outlines, quizzes and marking guides from your own material, ready to edit.</p>
-          <Link className={styles.sec} href="/teacher/lesson/new">
+          <Link className={styles.sec} href="/login?next=/teacher/lesson/new">
             Draft an outline
           </Link>
         </div>

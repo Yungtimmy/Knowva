@@ -83,7 +83,7 @@ Demo personas on the screens are Ada (student) and Dr. Adeyemi (lecturer). `/log
 | `/teacher/quiz/[id]` | Questions, key, marking guide, assign (`few-shot`, `sampling`, `status-codes`) |
 | `/teacher/class` | Redirects to CSC 201 A |
 | `/teacher/class/[classId]` | Class insights (`ss2a` CSC 201 A, `ss2b` CSC 201 B, `ss1a` CSC 101 A, `ss3a` CSC 301 A) |
-| `/login` | Email sign-in. Optional |
+| `/login` | Google sign-up and sign-in. Required before `/student` and `/teacher` |
 
 Student tabs: Home, Tutors, Learn, Tests, Progress. Practice quizzes stay off that bar. Teacher sidebar: Home, Lesson outlines, Quizzes and marking, Class insights.
 

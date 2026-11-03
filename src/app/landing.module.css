@@ -26,7 +26,32 @@
 
 .logo svg { position: absolute; left: -4px; top: -10px; }
 
-.navr { display: flex; gap: 18px; align-items: center; }
+.navr { display: flex; gap: 12px; align-items: center; }
+
+.auth { display: flex; align-items: center; gap: 8px; }
+.signIn, .signUp {
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 14px;
+  line-height: 1;
+  border-radius: 999px;
+  padding: 8px 14px;
+  white-space: nowrap;
+}
+.signUp {
+  color: var(--kn-cream);
+  background: var(--kn-orange);
+  box-shadow: 0 3px 0 var(--kn-orange-deep);
+}
+.signUp:hover { transform: translateY(2px); box-shadow: 0 1px 0 var(--kn-orange-deep); }
+.signIn {
+  color: var(--kn-ink);
+  background: transparent;
+  border: 1.5px solid var(--kn-ink);
+}
+.signIn:hover { transform: translateY(2px); }
+
+.moon { display: none; }
 
 .links { display: none; gap: 28px; font-weight: 500; color: var(--kn-ink-2); }
 .links a { color: inherit; text-decoration: none; }
@@ -146,9 +171,18 @@
 }
 .foot { padding: 40px 0; text-align: center; color: var(--kn-ink-3); font-size: 14px; }
 
+@media (max-width: 420px) {
+  .nav { padding: 10px 12px; }
+  .logo { font-size: 22px; }
+  .signIn, .signUp { font-size: 13px; padding: 7px 10px; }
+  .navr { gap: 8px; }
+}
+
 @media (min-width: 860px) {
   .hero h1 { font-size: 64px; }
   .sub { font-size: 19px; }
+  .navr { gap: 18px; }
+  .moon { display: block; }
   .links { display: flex; }
   .linksOpen { position: static; flex-direction: row; background: none; border: 0; padding: 0; gap: 28px; }
   .burger { display: none; }

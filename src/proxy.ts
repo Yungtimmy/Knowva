@@ -1,12 +1,49 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
+import { safeNextPath } from "@/lib/safe-next";
+
+function isCorePage(pathname: string) {
+  return pathname === "/student" || pathname.startsWith("/student/") || pathname === "/teacher" || pathname.startsWith("/teacher/");
+}
+
+function isCoreApi(pathname: string) {
+  return pathname === "/api" || pathname.startsWith("/api/");
+}
+
+function carrySession(from: NextResponse, to: NextResponse) {
+  from.cookies.getAll().forEach((cookie) => {
+    to.cookies.set(cookie);
+  });
+  for (const header of ["cache-control", "expires", "pragma"]) {
+    const value = from.headers.get(header);
+    if (value) to.headers.set(header, value);
+  }
+  return to;
+}
+
+function loginRedirect(request: NextRequest, session: NextResponse) {
+  const url = request.nextUrl.clone();
+  const next = safeNextPath(`${request.nextUrl.pathname}${request.nextUrl.search}`);
+  url.pathname = "/login";
+  url.search = "";
+  if (next) url.searchParams.set("next", next);
+  return carrySession(session, NextResponse.redirect(url));
+}
 
 export async function proxy(request: NextRequest) {
+  const { pathname } = request.nextUrl;
+  const corePage = isCorePage(pathname);
+  const coreApi = isCoreApi(pathname);
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim();
   const key =
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.trim() ||
     process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY?.trim();
-  if (!url || !key) return NextResponse.next();
+
+  if (!url || !key) {
+    if (corePage) return loginRedirect(request, NextResponse.next());
+    if (coreApi) return NextResponse.json({ error: "Sign in first." }, { status: 401 });
+    return NextResponse.next();
+  }
 
   let response = NextResponse.next({ request });
   const supabase = createServerClient(url, key, {
@@ -29,7 +66,14 @@ export async function proxy(request: NextRequest) {
     },
   });
 
-  await supabase.auth.getClaims();
+  const { data } = await supabase.auth.getClaims();
+  const claims = data?.claims;
+  const signedIn = Boolean(claims?.sub) && claims?.is_anonymous !== true;
+
+  if (!signedIn && corePage) return loginRedirect(request, response);
+  if (!signedIn && coreApi) {
+    return carrySession(response, NextResponse.json({ error: "Sign in first." }, { status: 401 }));
+  }
   return response;
 }
 

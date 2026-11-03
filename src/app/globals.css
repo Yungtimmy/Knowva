@@ -77,3 +77,23 @@ button, input, select, textarea { font-family: inherit; }
 }
 
 .gate .error { color: var(--kn-orange-deep); font-size: 14px; }
+
+.gate .google {
+  margin-top: 20px;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  border-radius: 999px;
+  border: 1.5px solid var(--kn-ink);
+  background: var(--kn-surface);
+  color: var(--kn-ink);
+  font-weight: 600;
+  font-size: 16px;
+  padding: 14px 20px;
+  cursor: pointer;
+}
+
+.gate .google:hover { transform: translateY(2px); }
+.gate .google:disabled { cursor: wait; opacity: 0.7; }
