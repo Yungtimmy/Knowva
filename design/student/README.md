@@ -3,7 +3,9 @@ Mobile-first, UI-only HTML. Shared styles: `student.css` (imports `../tokens.css
 
 | File | Screen | Route to mirror |
 |---|---|---|
-| dashboard.html | Home: streak, subjects + topic progress, "Do this next", recent tutor chats, study packs | `/student` |
+| onboarding.html | First run after Google: name, username, age, searchable interests. No tab bar | `/student/onboarding` |
+| dashboard.html | Empty Home. Greeting uses the profile name. One Create a tutor CTA. No seed tutors | `/student` |
+| dashboard-filled.html | With-tutors reference only. Not the empty state | `/student` when the student has tutors |
 | tutors.html | Tutor list with edit/delete | `/student/tutors` |
 | create-tutor.html | Create or edit a tutor | `/student/tutors/new` |
 | tutor.html | Chat with structured answer (short answer · step by step · remember it) | `/student/tutor` (`/student/tutor/[sessionId]`) |
@@ -17,3 +19,8 @@ Mobile-first, UI-only HTML. Shared styles: `student.css` (imports `../tokens.css
 
 Data shapes implied: Subject{name, topics[{name, progress}]}, TutorMessage{role, short, steps[], remember}, StudyPack{summary[], flashcards[{q,a}], questions[]}, Question{prompt, options[], answerIndex, explanation, subject, topic}, Attempt{quizId, score, missed[]}.
 Screenshots: `screens/*.png` (420 wide).
+
+## Update 4 Nov 2026 — onboarding + empty Home
+- `onboarding.html`: first-run after Google sign-up (name, username, age, searchable interests). Save → `/student`.
+- `dashboard.html` is now the empty state (no seed tutors; greeting = profile display name). `dashboard-filled.html` keeps the with-tutors reference.
+- Course catalog in onboarding is static mock data; the app keeps it in `src/lib/courses.ts`.

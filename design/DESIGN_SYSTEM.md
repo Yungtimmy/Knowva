@@ -51,4 +51,5 @@ test-take.html has no tabbar on purpose: tutor chat is locked during a test.
 - Never label UI "for students"; the audience is implied.
 - Brand mark: the three blobby eye-clouds (blue #2412B0, orange #FF4A1C, yellow #FBE062). Show them in the landing hero, on auth pages (floating + card cluster), and as a small `.brand-clouds` cluster in student page headers.
 - Auth: Google-only. Full-width white pill, 1.5px ink border, multicolor Google "G" SVG + "Continue with Google". No underlined text links as primary actions; sign-in/sign-up swap is secondary text. See `login.html`, `signup.html`.
+- Onboarding: after Google auth → `student/onboarding.html` (display name, username, age, searchable interest chips) → Home. Home is empty until the first tutor (one "Create a tutor" CTA, no seed/preview tutors). Greeting uses the profile display name, never a hard-coded Ada.
 - Landing nav: Features + Pricing links, Sign in (ghost pill) + Sign up (orange pill).

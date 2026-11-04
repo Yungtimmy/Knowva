@@ -56,14 +56,14 @@ unslop credit: Damir Sokolovsky / @heydamir (CC BY 4.0) for the polish pass. See
 
 Stack: Next.js App Router, TypeScript, Supabase Auth + Postgres, server LLM calls through the Vercel AI SDK (`generateText` + `Output.object`) and `@ai-sdk/openai` Chat Completions. Keys stay in env.
 
-The demo persona on the screens is Ada. `/login` is Google sign-in and sign-up when Supabase env is set. New accounts are students. There is no role picker and no lecturer sign-in.
+`/login` is Google sign-in and sign-up when Supabase env is set. New accounts are students. There is no role picker and no lecturer sign-in. After Google sign-in, an incomplete profile goes to `/student/onboarding` (name, username, age, interests). Home greets the saved name. It does not use a hard-coded demo name.
 
 ### Routes
 
 | Route | Screen |
 |---|---|
 | `/` | Landing |
-| `/student` | Home v2, stacked tutors. Saved tutors replace the sample cards |
+| `/student` | Home. Empty until this student creates a tutor. No preview tutors |
 | `/student/tutors` | Tutor library. Create, edit, delete |
 | `/student/tutors/new` | Create a tutor. `?id=` edits one |
 | `/student/tutor` | Sample tutor chat |
@@ -77,6 +77,7 @@ The demo persona on the screens is Ada. `/login` is Google sign-in and sign-up w
 | `/student/progress` | Test history and topic percentages |
 | `/student/quiz/[quizId]` | Practice quiz, separate from Test Centre. `?review=1` or `#review` opens the few-shot results state |
 | `/teacher` and `/teacher/*` | Redirect to `/student`. Lecturer screens are not in the product |
+| `/student/onboarding` | Name, username, age, and interests. Required until the profile is complete. No tab bar |
 | `/login` | Google sign-in. Required before `/student` |
 | `/signup` | Redirects to `/login?mode=signup` |
 
@@ -147,8 +148,8 @@ All POST. Invalid JSON fields return 400.
 
 With `GROQ_API_KEY`, tutor chat, materials, test generation, and teacher generate call Groq and return 200 (test create returns 201). A model failure is 502. Scoring never calls the model. The Resource Agent never asks the model for URLs.
 
-Signed-in users get tutors, quiz attempts, test results, and generated packs written to their own rows. The UI also keeps drafts in `localStorage` so the demo works with no database. Answer keys for an open test stay in the server session store.
+Signed-in users get tutors, quiz attempts, test results, and generated packs written to their own rows. Open test papers for a signed-in student are stored in `test_papers`. Without Supabase, they stay in the server session file. The UI also keeps drafts in `localStorage` so the demo works with no database.
 
 ### Database
 
-`profiles` (role `student` or `teacher`), `quiz_attempts`, `saved_materials`, `tutors`, `test_attempts`. RLS is own-rows only. Clients cannot update `profiles.role`. A trigger refuses a ninth tutor. Text PDFs with a text layer can be extracted on `POST /api/materials/generate`. Scanned pages are refused. OCR is not in this build.
+`profiles` (role `student` or `teacher`, plus `username`, `age`, `interests`), `quiz_attempts`, `saved_materials`, `tutors`, `test_attempts`, `test_papers`. RLS is own-rows only. Clients cannot update `profiles.role`. Open test answer keys live in `test_papers.answer_seal` (ciphertext), not in a readable column. Apply `supabase/migrations/` before expecting onboarding or Test Centre saves. A trigger refuses a ninth tutor. Text PDFs with a text layer can be extracted on `POST /api/materials/generate`. Scanned pages are refused. OCR is not in this build.

@@ -43,24 +43,53 @@ function chatModel() {
   return openai.chat(model);
 }
 
-export async function generateStructured<T>(schema: z.ZodType<T>, prompt: string, instructions?: string): Promise<T> {
+type GenerateOptions = {
+  timeoutMs?: number;
+  maxRetries?: number;
+};
+
+function callLimits(options?: GenerateOptions) {
+  const extra: { timeout?: number; maxRetries?: number } = {};
+  if (options?.timeoutMs !== undefined) extra.timeout = options.timeoutMs;
+  if (options?.maxRetries !== undefined) extra.maxRetries = options.maxRetries;
+  return extra;
+}
+
+function timedOut(error: unknown) {
+  if (!error || typeof error !== "object") return false;
+  const name = "name" in error ? String(error.name) : "";
+  const message = "message" in error ? String(error.message) : "";
+  return /timeout|abort/i.test(name) || /timeout|aborted/i.test(message);
+}
+
+export async function generateStructured<T>(
+  schema: z.ZodType<T>,
+  prompt: string,
+  instructions?: string,
+  options?: GenerateOptions,
+): Promise<T> {
   const system = instructions ?? INSTRUCTIONS;
+  const limits = callLimits(options);
   try {
     const result = await generateText({
       model: chatModel(),
       instructions: system,
       prompt,
       output: Output.object({ schema }),
+      ...limits,
     });
     if (result.output != null) return result.output;
-  } catch {
-    // Some Groq models reject json_schema. Fall through to a JSON parse.
+  } catch (error) {
+    // Some Groq models reject json_schema. A timeout should not start a second call.
+    if (timedOut(error)) throw error;
   }
 
   const result = await generateText({
     model: chatModel(),
     instructions: `${system}\nReply with one JSON object and no markdown. Use only the keys the schema asks for.`,
     prompt,
+    ...limits,
+    maxRetries: 0,
   });
   const text = result.text.trim();
   const start = text.indexOf("{");

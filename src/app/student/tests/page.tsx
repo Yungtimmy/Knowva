@@ -235,7 +235,7 @@ function TestCentre() {
           {busy ? "Preparing the test" : "Start test"}
         </button>
         {note ? (
-          <p className="meta" role="alert" style={{ marginTop: 8 }}>
+          <p className="note" role="alert">
             {note}
           </p>
         ) : null}

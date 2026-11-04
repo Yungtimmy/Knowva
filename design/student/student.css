@@ -94,3 +94,14 @@ label{font-size:13px;font-weight:500;color:var(--kn-ink-3);display:block;margin-
 
 /* Brand mascot cluster in header */
 .brand-clouds{display:flex;align-items:center;margin-left:auto;margin-right:10px;pointer-events:none}.brand-clouds svg{margin:0 -5px;flex:none}.brand-clouds svg:nth-child(2){transform:translateY(-3px)}
+.app.onboard{max-width:560px;padding-bottom:40px}
+.onboard-form{padding:20px;display:grid;gap:16px}
+.onboard-form .field{margin-bottom:0}
+.field > span{font-size:13px;font-weight:500;color:var(--kn-ink-3);display:block;margin-bottom:4px}
+.picked{min-height:8px}
+.picked .chip.on::after{content:" ×"}
+.course-list{max-height:260px;overflow:auto;padding:4px 0}
+.empty-desk{text-align:center;padding:32px 20px}
+.empty-desk h3{margin:14px 0 6px}
+.empty-desk .meta{margin:0 0 18px}
+.empty-desk .brand-clouds{margin:0;justify-content:center;width:100%}

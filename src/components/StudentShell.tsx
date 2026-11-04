@@ -2,7 +2,15 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { createContext, useContext } from "react";
 import { KnowvaClouds } from "@/components/KnowvaClouds";
+import { initials } from "@/lib/student-format";
+
+const GreetingName = createContext("there");
+
+export function useGreetingName() {
+  return useContext(GreetingName);
+}
 
 const TABS = [
   { id: "home", href: "/student", label: "Home" },
@@ -32,14 +40,16 @@ function headerKind(pathname: string) {
   return "logo";
 }
 
-export function StudentShell({ children }: { children: React.ReactNode }) {
+export function StudentShell({ name, children }: { name: string; children: React.ReactNode }) {
   const pathname = usePathname();
   const active = tabId(pathname);
   const kind = headerKind(pathname);
+  const onboard = pathname.startsWith("/student/onboarding");
   const practice = pathname.startsWith("/student/quiz");
+  const mainClass = onboard ? "app onboard" : active === "home" && kind !== "lock" ? "app dash" : "app";
   return (
-    <>
-      <main className={active === "home" && kind !== "lock" ? "app dash" : "app"}>
+    <GreetingName.Provider value={name}>
+      <main className={mainClass}>
         {practice ? (
           <p className="meta" style={{ marginBottom: 8 }}>
             Practice quiz · not graded as a test
@@ -57,7 +67,7 @@ export function StudentShell({ children }: { children: React.ReactNode }) {
               ← Test Centre
             </Link>
           ) : (
-            <Link className="logo" href="/student">
+            <Link className="logo" href={onboard ? "/student/onboarding" : "/student"}>
               <svg width="18" height="12" viewBox="0 0 22 14" aria-hidden="true">
                 <path d="M11 0 22 5 11 10 0 5Z" fill="#FF4A1C" transform="rotate(-14 11 5)" />
                 <path d="M5 8v4h10V8" fill="#FF4A1C" transform="rotate(-14 11 5)" />
@@ -70,13 +80,13 @@ export function StudentShell({ children }: { children: React.ReactNode }) {
             <span className="meta">Untimed</span>
           ) : (
             <Link href="/login" className="avatar" style={{ textDecoration: "none" }} aria-label="Account">
-              AO
+              {onboard ? "·" : initials(name)}
             </Link>
           )}
         </header>
         {children}
       </main>
-      {kind === "lock" ? null : (
+      {kind === "lock" || onboard ? null : (
         <nav className="tabbar" aria-label="Knowva">
           {TABS.map((tab) => (
             <Link
@@ -91,7 +101,7 @@ export function StudentShell({ children }: { children: React.ReactNode }) {
           ))}
         </nav>
       )}
-    </>
+    </GreetingName.Provider>
   );
 }
 
@@ -132,11 +142,7 @@ function TabIcon({ id }: { id: (typeof TABS)[number]["id"] }) {
   }
   return (
     <svg viewBox="0 0 24 24" aria-hidden="true">
-      <path d="M4 19V5" />
-      <path d="M4 19h16" />
-      <path d="M8 16v-4" />
-      <path d="M12 16V8" />
-      <path d="M16 16v-6" />
+      <path d="M4 20V10M10 20V4M16 20v-7M22 20H2" />
     </svg>
   );
 }

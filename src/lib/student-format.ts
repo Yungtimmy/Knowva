@@ -77,7 +77,18 @@ export function streakDays(isos: Array<string | null | undefined>, now = new Dat
   return count;
 }
 
-const TOPIC_SPLIT = /\s*(?:,|;|\band\b)\s*/i;
+const TOPIC_SPLIT = /\s*(?:,|;|\n|\band\b)\s*/i;
+
+export function initials(name: string) {
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return "·";
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+  return `${parts[0][0] ?? ""}${parts[1][0] ?? ""}`.toUpperCase();
+}
+
+export function emailLocal(email: string) {
+  return email.split("@")[0]?.trim().replace(/\s+/g, "") ?? "";
+}
 
 export function topicsMatch(a: string, b: string) {
   const norm = (value: string) => value.toLowerCase().replace(/[^a-z0-9]+/g, "");
