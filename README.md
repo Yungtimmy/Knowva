@@ -14,7 +14,7 @@ npm run dev
 
 Open [http://localhost:3000](http://localhost:3000).
 
-Leave the Groq and Supabase keys blank to use demo mode. Tutor chat, materials, and Test Centre generation still answer: they validate the body and return **503** with a demo payload (`demo: true`). Creating a tutor does not train a model. It stores a config. Quiz scoring, Test Centre scoring, and resource ranking are rules in code. They do not call a model. Resource links are a curated allowlist. `verified` is true only after the server checks that the URL responds. Anything else is a search query, not a link.
+Leave the Groq and Supabase keys blank to use demo mode. Tutor chat, materials, and Test Centre generation still answer: they validate the body and return **503** with a demo payload (`demo: true`). Creating a tutor does not train a model. It stores a config. Quiz scoring and Test Centre scoring are rules in code. Learn → Find resources asks Groq for real https links (YouTube watch pages, freeCodeCamp, Udemy, MDN, official docs). A link is returned only after the server can open it. Search-query cards are not returned.
 
 | Variable | Where it is used |
 |---|---|
