@@ -26,9 +26,11 @@ export function demoPayload(body: Record<string, unknown>) {
   );
 }
 
-export function modelFailed() {
+export function modelFailed(detail?: string) {
+  const extra = detail?.replace(/\s+/g, " ").trim() ?? "";
+  const safe = extra && !/key|bearer|token|authorization|secret/i.test(extra) ? extra.slice(0, 140) : "";
   return NextResponse.json(
-    { error: "The model did not answer. Try again in a moment." },
+    { error: safe ? `The model did not answer. ${safe}` : "The model did not answer. Try again in a moment." },
     { status: 502 },
   );
 }

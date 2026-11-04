@@ -1,4 +1,7 @@
 import assert from "node:assert/strict";
+import { mkdtempSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { demoTestQuestions, isValidMcq, scoreAssessment, toPublicQuestions } from "../src/lib/assessment.ts";
 import { canAssign } from "../src/lib/assign.ts";
 import { topicStatus } from "../src/lib/gap.ts";
@@ -9,6 +12,13 @@ import { ALLOWED_URL_PREFIXES, assembleResources } from "../src/lib/resources.ts
 import { scoreQuiz } from "../src/lib/score.ts";
 import { lecturerReply } from "../src/lib/tutor-reply.ts";
 import { assertSameCourse, buildTutorInstructions, canCreateTutor, notesForCourse } from "../src/lib/tutors.ts";
+import { filterCourses, COURSES } from "../src/lib/courses.ts";
+import { isProfileComplete, presentProfile, resolveGreetingName, type ProfileFields } from "../src/lib/profile.ts";
+import { testCreateSchema } from "../src/lib/schemas.ts";
+import { acceptGeneratedQuestions, fillTestQuestions, normalizeTopics } from "../src/lib/test-questions.ts";
+import { createPaper, getPaper, mergeSealedQuestions, toPaper } from "../src/lib/test-repo.ts";
+import { openSeal, sealAnswers } from "../src/lib/test-seal.ts";
+import { topicSeeds } from "../src/lib/student-format.ts";
 import { TUTOR_CAP, type Question } from "../src/lib/types.ts";
 
 assert.equal(topicStatus(48), "gap");
@@ -216,6 +226,92 @@ assert.ok(pack.questions.every(isValidMcq));
 
 const pdf = miniPdf("Photosynthesis uses light.");
 assert.match(extractPdfText(pdf), /Photosynthesis uses light/);
+
+assert.equal(COURSES.length, 53);
+assert.equal(filterCourses("sen 201").some((course) => course.name.startsWith("SEN 201")), true);
+assert.equal(filterCourses("csc205").some((course) => course.name.startsWith("CSC 205")), true);
+assert.equal(filterCourses("no-such-course").length, 0);
+
+const blank: ProfileFields = { displayName: "Learner", username: "", age: null, interests: [] };
+assert.equal(isProfileComplete(blank), false);
+assert.equal(resolveGreetingName(blank, { googleName: "Daniel Adeiye", email: "ada@example.com" }), "Daniel Adeiye");
+assert.equal(resolveGreetingName(blank, { googleName: "", email: "tolu.ade@school.edu" }), "tolu.ade");
+assert.equal(resolveGreetingName(blank, { googleName: "", email: "" }), "there");
+const ready = presentProfile(
+  {
+    display_name: "Tolu Ade",
+    username: "tolu_ade",
+    age: 19,
+    interests: ["SEN 201 Software Engineering", "React"],
+  },
+  { email: "ada@example.com", user_metadata: { full_name: "Ada Okonkwo" } },
+);
+assert.equal(ready.complete, true);
+assert.equal(ready.greetingName, "Tolu Ade");
+assert.equal(ready.greetingName.includes("Ada"), false);
+
+const screenshot = {
+  course: "SEN 201",
+  questionCount: 10,
+  difficulty: "medium" as const,
+  topics: ["Software Architecture Software Development"],
+  format: "multiple_choice" as const,
+};
+assert.equal(testCreateSchema.safeParse(screenshot).success, true);
+assert.deepEqual(topicSeeds("Software Architecture\nSoftware Development"), ["Software Architecture", "Software Development"]);
+const draft = {
+  course: "SEN 201",
+  topics: normalizeTopics(screenshot.topics, screenshot.course),
+  count: 10,
+  difficulty: "medium" as const,
+};
+const accepted = acceptGeneratedQuestions(
+  [
+    {
+      prompt: "Which choice stays inside a module boundary?",
+      options: ["Hide the internals", "Import every file", "Skip the interface", "Change the course"],
+      answerIndex: 0,
+      explanation: "A boundary hides internals.",
+      topic: "Software Architecture Software Development",
+    },
+  ],
+  draft,
+);
+const paperQuestions = fillTestQuestions(accepted, draft);
+assert.equal(paperQuestions.length, 10);
+assert.ok(paperQuestions.every(isValidMcq));
+assert.equal(paperQuestions[0]?.subject, "SEN 201");
+assert.equal(toPublicQuestions(paperQuestions)[0]?.answerIndex, undefined);
+
+process.env.KNOWVA_SEAL_KEY = "rules-seal";
+const sealed = sealAnswers([{ id: "q1", answerIndex: 0, explanation: "A boundary hides internals." }]);
+assert.ok(sealed);
+assert.equal(sealed.includes("boundary"), false);
+assert.deepEqual(openSeal(sealed), [{ id: "q1", answerIndex: 0, explanation: "A boundary hides internals." }]);
+assert.equal(openSeal(`${sealed}x`), null);
+const merged = mergeSealedQuestions(
+  [{ id: "q1", prompt: "Which?", options: ["Hide", "Skip"], subject: "SEN 201", topic: "Software Architecture" }],
+  openSeal(sealed),
+);
+assert.equal(merged?.[0]?.answerIndex, 0);
+assert.equal(merged?.[0]?.explanation.includes("boundary"), true);
+
+process.env.KNOWVA_DATA_DIR = mkdtempSync(join(tmpdir(), "knowva-rules-"));
+const owner = { id: "session:rules", supabase: null, persisted: "session" as const };
+const stored = await createPaper({
+  owner,
+  course: "SEN 201",
+  tutorId: null,
+  difficulty: "medium",
+  topics: draft.topics,
+  questions: paperQuestions,
+  kind: "test",
+});
+const loaded = await getPaper(owner, stored.id);
+assert.equal(loaded?.questions.length, 10);
+assert.equal(loaded?.questions[0]?.answerIndex, paperQuestions[0]?.answerIndex);
+const pub = toPaper(loaded!);
+assert.equal("answerIndex" in pub.questions[0], false);
 
 console.log("rules ok");
 

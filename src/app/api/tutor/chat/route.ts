@@ -4,7 +4,7 @@ import { generateStructured, llmConfigured } from "@/lib/llm";
 import { resolveOwner } from "@/lib/owner";
 import { assembleResources, verifyBundle } from "@/lib/resources";
 import { modelTutorSchema, tutorChatSchema } from "@/lib/schemas";
-import { hasOpenTest, listMaterials } from "@/lib/test-repo";
+import { hasOpenTest, listMaterials, TestStoreError } from "@/lib/test-repo";
 import { lecturerReply } from "@/lib/tutor-reply";
 import { getTutor } from "@/lib/tutor-repo";
 import {
@@ -27,11 +27,17 @@ export async function POST(request: Request) {
   const input = parsed.data;
   const owner = await resolveOwner();
 
-  if (await hasOpenTest(owner.id)) {
-    return NextResponse.json(
-      { error: "Tutor chat is locked until you submit the test.", locked: true },
-      { status: 423 },
-    );
+  try {
+    if (await hasOpenTest(owner)) {
+      return NextResponse.json(
+        { error: "Tutor chat is locked until you submit the test.", locked: true },
+        { status: 423 },
+      );
+    }
+  } catch (error) {
+    if (error instanceof TestStoreError) return NextResponse.json({ error: error.message }, { status: 500 });
+    console.error("POST /api/tutor/chat open test", error instanceof Error ? error.name : "error");
+    return NextResponse.json({ error: "Could not check the open test." }, { status: 500 });
   }
 
   let tutor: Tutor | null = null;

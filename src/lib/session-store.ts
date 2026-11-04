@@ -25,7 +25,10 @@ type Bucket = {
 
 type FileShape = Record<string, Bucket>;
 
-const filePath = path.join(process.cwd(), ".data", "knowva-session.json");
+function bucketFile() {
+  const root = process.env.KNOWVA_DATA_DIR?.trim() || path.join(process.cwd(), ".data");
+  return path.join(root, "knowva-session.json");
+}
 
 function emptyBucket(): Bucket {
   return { tutors: [], papers: [], materials: [] };
@@ -44,7 +47,7 @@ function enqueue<T>(fn: () => Promise<T>): Promise<T> {
 
 async function readFileShape(): Promise<FileShape> {
   try {
-    const raw = await readFile(filePath, "utf8");
+    const raw = await readFile(bucketFile(), "utf8");
     const parsed = JSON.parse(raw) as FileShape;
     return parsed && typeof parsed === "object" ? parsed : {};
   } catch {
@@ -53,6 +56,7 @@ async function readFileShape(): Promise<FileShape> {
 }
 
 async function writeFileShape(data: FileShape) {
+  const filePath = bucketFile();
   await mkdir(path.dirname(filePath), { recursive: true });
   await writeFile(filePath, JSON.stringify(data));
 }

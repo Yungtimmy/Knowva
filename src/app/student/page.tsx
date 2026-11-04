@@ -2,9 +2,11 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { KnowvaClouds } from "@/components/KnowvaClouds";
 import { Mascot, mascotFor } from "@/components/Mascot";
+import { useGreetingName } from "@/components/StudentShell";
 import { getJson } from "@/lib/api-client";
-import { DEMO_DATE_SHORT, tutorTitle, tutors as sampleTutors } from "@/lib/demo";
+import { tutorTitle } from "@/lib/demo";
 import { cardTime, clip, deskDate, greeting, levelLabel, streakDays } from "@/lib/student-format";
 import type { ProgressReport, Tutor, TutorCard, TutorStatus } from "@/lib/types";
 
@@ -31,14 +33,8 @@ const KNOWN = new Set(["Prompt engineering", "Software engineering", "Web APIs",
 
 type NextStep = { href: string; title: string; detail: string };
 
-const SAMPLE_NEXT: NextStep[] = [
-  { href: "/student/tutor/python", title: "Revise failing tests", detail: "Software engineering · scored 2/5" },
-  { href: "/student/quiz/few-shot", title: "Retake the few-shot quiz", detail: "Prompt engineering · last try 2/4" },
-];
-
 type Desk = {
   cards: TutorCard[];
-  sample: boolean;
   streak: number;
   next: NextStep[];
 };
@@ -80,8 +76,9 @@ function nextSteps(report: ProgressReport): NextStep[] {
 }
 
 export default function StudentHomePage() {
-  const [hello, setHello] = useState("Morning");
-  const [when, setWhen] = useState(DEMO_DATE_SHORT);
+  const name = useGreetingName();
+  const [hello, setHello] = useState("");
+  const [when, setWhen] = useState("");
   const [desk, setDesk] = useState<Desk | null>(null);
 
   useEffect(() => {
@@ -97,20 +94,19 @@ export default function StudentHomePage() {
       const progress = progressResult.status === "fulfilled" ? progressResult.value.progress : null;
       const saved = tutors.length > 0;
       const first = tutors[0];
-      let streak = saved ? 0 : 5;
-      let next = SAMPLE_NEXT;
+      let streak = 0;
+      let next: NextStep[] = saved
+        ? [
+            { href: `/student/tutor/${first?.id ?? ""}`, title: `Open ${first?.name ?? "your tutor"}`, detail: first?.course ?? "Your course" },
+            { href: "/student/tests", title: "Start a test", detail: "Scores land on Progress" },
+          ]
+        : [{ href: "/student/tutors/new", title: "Create a tutor", detail: "Start with the course you need most" }];
       if (progress && progress.testsTaken > 0) {
         streak = streakDays(progress.history.map((item) => item.submittedAt ?? item.createdAt));
         next = nextSteps(progress);
-      } else if (saved && first) {
-        next = [
-          { href: `/student/tutor/${first.id}`, title: `Open ${first.name}`, detail: first.course },
-          { href: "/student/tests", title: "Start a test", detail: "Scores land on Progress" },
-        ];
       }
       setDesk({
-        cards: saved ? tutors.map(savedCard) : sampleTutors,
-        sample: !saved,
+        cards: tutors.map(savedCard),
         streak,
         next,
       });
@@ -124,14 +120,28 @@ export default function StudentHomePage() {
     <>
       <section className="hello">
         <p className="meta">{when}</p>
-        <h1>
-          {hello}, Ada
-        </h1>
-        <p>Your tutors are on the desk. Pick one and keep going.</p>
+        <h1>{hello ? `${hello}, ${name}` : name}</h1>
+        <p>
+          {desk && desk.cards.length > 0
+            ? "Your tutors are on the desk. Pick one and keep going."
+            : desk
+              ? "No tutors yet. Create your first and it will show up here."
+              : "Opening your desk."}
+        </p>
       </section>
       {desk ? (
         <div className="dash-grid">
-          <section className="stack" aria-label={desk.sample ? "Sample tutors" : "Your tutors"}>
+          <section className="stack" aria-label="Your tutors">
+            {desk.cards.length === 0 ? (
+              <div className="card empty-desk">
+                <KnowvaClouds size="brand" />
+                <h3>Your desk is empty</h3>
+                <p className="meta">Pick a subject and a level, and your tutor is ready in a minute.</p>
+                <Link className="btn btn-primary" href="/student/tutors/new">
+                  Create a tutor
+                </Link>
+              </div>
+            ) : null}
             {desk.cards.map((tutor, index) => {
               const face = faceFor(tutor.subject, index);
               const href = `/student/tutor/${tutor.id}`;
@@ -178,24 +188,28 @@ export default function StudentHomePage() {
                 </article>
               );
             })}
-            <Link className="add-tutor" href="/student/tutors/new">
-              + Create a tutor
-            </Link>
+            {desk.cards.length > 0 ? (
+              <Link className="add-tutor" href="/student/tutors/new">
+                + Create a tutor
+              </Link>
+            ) : null}
           </section>
           <aside className="aside">
-            <div className="mini">
-              <div>
-                <p className="meta">Study streak</p>
-                <b>
-                  {desk.streak} {desk.streak === 1 ? "day" : "days"}
-                </b>
+            {desk.cards.length > 0 ? (
+              <div className="mini">
+                <div>
+                  <p className="meta">Study streak</p>
+                  <b>
+                    {desk.streak} {desk.streak === 1 ? "day" : "days"}
+                  </b>
+                </div>
+                <div className="dots" aria-label={`${desk.streak} day streak`}>
+                  {Array.from({ length: 7 }, (_, index) => (
+                    <i key={index} className={index < Math.min(desk.streak, 7) ? "on" : undefined} />
+                  ))}
+                </div>
               </div>
-              <div className="dots" aria-label={`${desk.streak} day streak`}>
-                {Array.from({ length: 7 }, (_, index) => (
-                  <i key={index} className={index < Math.min(desk.streak, 7) ? "on" : undefined} />
-                ))}
-              </div>
-            </div>
+            ) : null}
             <div className="mini col">
               <p className="meta">Do this next</p>
               {desk.next.map((item) => (

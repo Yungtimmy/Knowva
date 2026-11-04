@@ -185,15 +185,26 @@ export const modelTestSchema = z.object({
   questions: z
     .array(
       z.object({
-        prompt: z.string().min(1).max(400),
-        options: z.array(z.string().min(1).max(200)).length(4),
-        answerIndex: z.number().int().min(0).max(3),
-        explanation: z.string().min(1).max(400),
-        topic: z.string().min(1).max(120),
+        prompt: z.string().min(1).max(500),
+        options: z.array(z.string().min(1).max(300)).min(2).max(6),
+        answerIndex: z.number().int().nonnegative(),
+        explanation: z.string().min(1).max(800),
+        topic: z.string().min(1).max(160),
       }),
     )
     .min(1)
     .max(20),
+});
+
+export const profileSchema = z.object({
+  displayName: z.string().trim().min(1).max(80),
+  username: z
+    .string()
+    .trim()
+    .toLowerCase()
+    .regex(/^[a-z0-9_.]{3,20}$/, "Use 3-20 lowercase letters, numbers, _ or ."),
+  age: z.number().int().min(10).max(99),
+  interests: z.array(z.string().trim().min(1).max(80)).min(1).max(53),
 });
 
 export const modelOutlineSchema = z.object({

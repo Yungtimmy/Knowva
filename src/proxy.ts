@@ -1,5 +1,6 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
+import { isProfileComplete, profileFromRow } from "@/lib/profile";
 import { safeNextPath } from "@/lib/safe-next";
 
 function isTeacherPage(pathname: string) {
@@ -83,6 +84,30 @@ export async function proxy(request: NextRequest) {
   if (!signedIn && corePage) return loginRedirect(request, response);
   if (!signedIn && coreApi) {
     return carrySession(response, NextResponse.json({ error: "Sign in first." }, { status: 401 }));
+  }
+
+  if (signedIn && corePage && typeof claims?.sub === "string") {
+    const { data: row, error } = await supabase
+      .from("profiles")
+      .select("display_name, username, age, interests")
+      .eq("id", claims.sub)
+      .maybeSingle();
+    if (!error) {
+      const complete = isProfileComplete(profileFromRow(row));
+      const onboarding = pathname === "/student/onboarding" || pathname.startsWith("/student/onboarding/");
+      if (!complete && !onboarding) {
+        const url = request.nextUrl.clone();
+        url.pathname = "/student/onboarding";
+        url.search = "";
+        return carrySession(response, NextResponse.redirect(url));
+      }
+      if (complete && onboarding) {
+        const url = request.nextUrl.clone();
+        url.pathname = "/student";
+        url.search = "";
+        return carrySession(response, NextResponse.redirect(url));
+      }
+    }
   }
   return response;
 }
