@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { normalizeMascotColor, mascotColorFor } from "./mascot-color";
 import { readBucket, updateBucket } from "./session-store";
 import { TUTOR_CAP, type LearningGoal, type LearningLevel, type ExplanationStyle, type Tutor } from "./types";
 import { TutorCapError, canCreateTutor } from "./tutors";
@@ -17,15 +18,25 @@ type TutorRow = {
   level: LearningLevel;
   explanation_style: ExplanationStyle;
   goals: LearningGoal[] | null;
+  mascot_color?: string | null;
+  last_chat_at?: string | null;
   created_at: string;
   updated_at: string;
 };
 
 const GOALS = new Set<LearningGoal>(["pass_exam", "understand_basics", "practise_problems", "revise_fast"]);
 
+export function normalizeTutor(tutor: Tutor): Tutor {
+  return {
+    ...tutor,
+    mascotColor: normalizeMascotColor(tutor.mascotColor, tutor.course, tutor.id),
+    lastChatAt: tutor.lastChatAt ?? null,
+  };
+}
+
 function fromRow(row: TutorRow): Tutor {
   const goals = Array.isArray(row.goals) ? row.goals.filter((goal): goal is LearningGoal => GOALS.has(goal)) : [];
-  return {
+  return normalizeTutor({
     id: row.id,
     name: row.name,
     course: row.course,
@@ -33,9 +44,11 @@ function fromRow(row: TutorRow): Tutor {
     level: row.level,
     explanationStyle: row.explanation_style,
     goals,
+    mascotColor: row.mascot_color ?? "",
+    lastChatAt: row.last_chat_at ?? null,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
-  };
+  });
 }
 
 function toInsert(tutor: Tutor, userId: string) {
@@ -48,6 +61,7 @@ function toInsert(tutor: Tutor, userId: string) {
     level: tutor.level,
     explanation_style: tutor.explanationStyle,
     goals: tutor.goals,
+    mascot_color: tutor.mascotColor,
     created_at: tutor.createdAt,
     updated_at: tutor.updatedAt,
   };
@@ -64,7 +78,7 @@ export async function listTutors(owner: Owner) {
   const remote = await supabaseTutors(owner);
   if (remote) return remote;
   const bucket = await readBucket(owner.id);
-  return bucket.tutors;
+  return bucket.tutors.map(normalizeTutor);
 }
 
 export async function getTutor(owner: Owner, id: string) {
@@ -77,7 +91,15 @@ export async function createTutor(
   input: Pick<Tutor, "name" | "course" | "focus" | "level" | "explanationStyle" | "goals">,
 ) {
   const now = new Date().toISOString();
-  const tutor: Tutor = { ...input, id: crypto.randomUUID(), createdAt: now, updatedAt: now };
+  const id = crypto.randomUUID();
+  const tutor: Tutor = {
+    ...input,
+    id,
+    mascotColor: mascotColorFor(input.course, id),
+    lastChatAt: null,
+    createdAt: now,
+    updatedAt: now,
+  };
   const remote = await supabaseTutors(owner);
   if (remote) {
     if (!canCreateTutor(remote.length).ok) throw new TutorCapError();
@@ -89,7 +111,7 @@ export async function createTutor(
   return updateBucket(owner.id, (bucket) => {
     if (!canCreateTutor(bucket.tutors.length).ok) throw new TutorCapError();
     bucket.tutors.unshift(tutor);
-    return tutor;
+    return normalizeTutor(tutor);
   });
 }
 
@@ -121,7 +143,7 @@ export async function updateTutor(owner: Owner, id: string, patch: Partial<Omit<
     const index = bucket.tutors.findIndex((tutor) => tutor.id === id);
     const current = bucket.tutors[index];
     if (!current) return null;
-    const next = { ...current, ...patch, id, updatedAt: now };
+    const next = normalizeTutor({ ...current, ...patch, id, mascotColor: current.mascotColor, updatedAt: now });
     bucket.tutors[index] = next;
     return next;
   });
@@ -137,6 +159,7 @@ export async function deleteTutor(owner: Owner, id: string) {
   return updateBucket(owner.id, (bucket) => {
     const before = bucket.tutors.length;
     bucket.tutors = bucket.tutors.filter((tutor) => tutor.id !== id);
+    if (bucket.threads) delete bucket.threads[id];
     return bucket.tutors.length < before;
   });
 }

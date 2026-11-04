@@ -2,7 +2,7 @@
 
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
-import { getJson, postJson, sendJson } from "@/lib/api-client";
+import { getJson, postJson } from "@/lib/api-client";
 import type { ExplanationStyle, LearningGoal, LearningLevel, Tutor } from "@/lib/types";
 
 const LEVELS: { id: LearningLevel; label: string }[] = [
@@ -39,24 +39,15 @@ function TutorForm() {
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
+    if (!editId) return;
+    router.replace(`/student/tutor/${editId}/profile`);
+  }, [editId, router]);
+
+  useEffect(() => {
     if (editId) return;
     getJson<{ remaining: number }>("/api/tutors")
       .then((data) => setAtCap(data.remaining <= 0))
       .catch(() => undefined);
-  }, [editId]);
-
-  useEffect(() => {
-    if (!editId) return;
-    getJson<{ tutor: Tutor }>(`/api/tutors/${editId}`)
-      .then((data) => {
-        setName(data.tutor.name);
-        setCourse(data.tutor.course);
-        setFocus(data.tutor.focus);
-        setLevel(data.tutor.level);
-        setExplanationStyle(data.tutor.explanationStyle);
-        setGoals(data.tutor.goals);
-      })
-      .catch((error: unknown) => setNote(error instanceof Error ? error.message : "Could not open that tutor."));
   }, [editId]);
 
   function toggleGoal(goal: LearningGoal) {
@@ -69,14 +60,12 @@ function TutorForm() {
 
   async function onSubmit(event: React.FormEvent) {
     event.preventDefault();
-    if (atCap && !editId) return;
+    if (atCap) return;
     setBusy(true);
     setNote("");
     const body = { name, course, focus, level, explanationStyle, goals };
     try {
-      const data = editId
-        ? await sendJson<{ tutor: Tutor }>(`/api/tutors/${editId}`, "PATCH", body)
-        : await postJson<{ tutor: Tutor }>("/api/tutors", body);
+      const data = await postJson<{ tutor: Tutor }>("/api/tutors", body);
       router.push(`/student/tutor/${data.tutor.id}`);
     } catch (error) {
       setNote(error instanceof Error ? error.message : "Could not save the tutor.");
@@ -84,9 +73,11 @@ function TutorForm() {
     }
   }
 
+  if (editId) return <p className="meta">Opening the tutor profile.</p>;
+
   return (
     <>
-      <h1>{editId ? "Edit tutor" : "Create a tutor"}</h1>
+      <h1>Create a tutor</h1>
       <p className="meta" style={{ margin: "4px 0 18px" }}>
         Tell us what you want to learn. You can change this later.
       </p>

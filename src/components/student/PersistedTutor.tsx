@@ -3,17 +3,44 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { getJson } from "@/lib/api-client";
-import type { Tutor, TutorCard } from "@/lib/types";
+import type { Tutor, TutorCard, TutorMessage } from "@/lib/types";
 import { TutorDesk } from "./TutorDesk";
 
-export function PersistedTutor({ tutorId }: { tutorId: string }) {
+export function PersistedTutor({ tutorId, openSearch = false }: { tutorId: string; openSearch?: boolean }) {
   const [tutor, setTutor] = useState<Tutor | null>(null);
+  const [messages, setMessages] = useState<TutorMessage[]>([]);
+  const [historyError, setHistoryError] = useState("");
   const [missing, setMissing] = useState(false);
+  const [ready, setReady] = useState(false);
 
   useEffect(() => {
-    getJson<{ tutor: Tutor }>(`/api/tutors/${tutorId}`)
-      .then((data) => setTutor(data.tutor))
-      .catch(() => setMissing(true));
+    let cancel = false;
+    setReady(false);
+    setMissing(false);
+    Promise.allSettled([
+      getJson<{ tutor: Tutor }>(`/api/tutors/${tutorId}`),
+      getJson<{ messages: TutorMessage[] }>(`/api/tutors/${tutorId}/messages`),
+    ]).then(([tutorResult, messageResult]) => {
+      if (cancel) return;
+      if (tutorResult.status === "rejected") {
+        setMissing(true);
+        setReady(true);
+        return;
+      }
+      setTutor(tutorResult.value.tutor);
+      if (messageResult.status === "fulfilled") {
+        setMessages(messageResult.value.messages);
+        setHistoryError("");
+      } else {
+        setMessages([]);
+        const reason = messageResult.reason;
+        setHistoryError(reason instanceof Error ? reason.message : "Could not load this chat.");
+      }
+      setReady(true);
+    });
+    return () => {
+      cancel = true;
+    };
   }, [tutorId]);
 
   if (missing) {
@@ -33,7 +60,7 @@ export function PersistedTutor({ tutorId }: { tutorId: string }) {
     );
   }
 
-  if (!tutor) return <p className="meta">Opening the tutor.</p>;
+  if (!ready || !tutor) return <p className="meta">Opening the tutor.</p>;
 
   const card: TutorCard = {
     id: tutor.id,
@@ -44,6 +71,17 @@ export function PersistedTutor({ tutorId }: { tutorId: string }) {
     status: "ready",
     preview: tutor.focus,
     updatedAt: "",
+    mascotColor: tutor.mascotColor,
   };
-  return <TutorDesk tutor={card} persistedId={tutor.id} />;
+  return (
+    <TutorDesk
+      key={tutor.id}
+      tutor={card}
+      persistedId={tutor.id}
+      mascotColor={tutor.mascotColor}
+      openSearch={openSearch}
+      initialMessages={messages}
+      historyError={historyError}
+    />
+  );
 }

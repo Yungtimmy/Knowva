@@ -46,7 +46,8 @@ export function StudentShell({ name, children }: { name: string; children: React
   const kind = headerKind(pathname);
   const onboard = pathname.startsWith("/student/onboarding");
   const practice = pathname.startsWith("/student/quiz");
-  const mainClass = onboard ? "app onboard" : active === "home" && kind !== "lock" ? "app dash" : "app";
+  const chat = pathname === "/student/tutor" || /^\/student\/tutor\/[^/]+$/.test(pathname);
+  const mainClass = onboard ? "app onboard" : chat ? "app chat" : active === "home" && kind !== "lock" ? "app dash" : "app";
   return (
     <GreetingName.Provider value={name}>
       <main className={mainClass}>

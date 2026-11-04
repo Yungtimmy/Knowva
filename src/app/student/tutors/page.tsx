@@ -2,19 +2,17 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { getJson, sendJson } from "@/lib/api-client";
-import { cardTime, clip } from "@/lib/student-format";
+import { Mascot } from "@/components/Mascot";
+import { getJson } from "@/lib/api-client";
+import { clip, shortWhen } from "@/lib/student-format";
 import { TUTOR_CAP, type Tutor } from "@/lib/types";
-
-const FACES = ["#2412B0", "#FF4A1C", "#FBE062", "#1C1B19"];
 
 export default function TutorsPage() {
   const [tutors, setTutors] = useState<Tutor[]>([]);
   const [ready, setReady] = useState(false);
   const [note, setNote] = useState("");
-  const [pending, setPending] = useState<string | null>(null);
 
-  function load() {
+  useEffect(() => {
     getJson<{ tutors: Tutor[] }>("/api/tutors")
       .then((data) => {
         setTutors(data.tutors);
@@ -25,33 +23,14 @@ export default function TutorsPage() {
         setReady(true);
         setNote(error instanceof Error ? error.message : "Could not load tutors.");
       });
-  }
-
-  useEffect(() => {
-    load();
   }, []);
-
-  async function remove(id: string) {
-    if (pending !== id) {
-      setPending(id);
-      return;
-    }
-    setNote("");
-    try {
-      await sendJson(`/api/tutors/${id}`, "DELETE");
-      setPending(null);
-      load();
-    } catch (error) {
-      setNote(error instanceof Error ? error.message : "Could not delete that tutor.");
-    }
-  }
 
   const countLine =
     tutors.length === 0
       ? "No tutors yet. You can keep 8."
       : tutors.length >= TUTOR_CAP
         ? `${TUTOR_CAP} tutors. That is the limit.`
-        : `${tutors.length} ${tutors.length === 1 ? "tutor" : "tutors"} · tap one to open it`;
+        : `${tutors.length} ${tutors.length === 1 ? "tutor" : "tutors"} · tap one to pick up your chat`;
 
   return (
     <>
@@ -66,24 +45,21 @@ export default function TutorsPage() {
       </div>
       <section className="card list">
         {ready && tutors.length === 0 ? <p>No saved tutors yet. Create one for a course.</p> : null}
-        {tutors.map((tutor, index) => (
+        {tutors.map((tutor) => (
           <article className="trow" key={tutor.id}>
             <Link className="trow-main" href={`/student/tutor/${tutor.id}`}>
-              <span className="face" style={{ background: FACES[index % FACES.length] }} />
+              <span className="face">
+                <Mascot color={tutor.mascotColor} className="lib-mascot" />
+              </span>
               <span>
                 <h3>{tutor.name}</h3>
                 <span className="meta">
-                  {tutor.course}
-                  <br />
-                  {clip(tutor.focus, 42)} · {cardTime(tutor.updatedAt)}
+                  {clip(tutor.focus, 42)} · {tutor.lastChatAt ? `Last chat ${chatWhen(tutor.lastChatAt)}` : "No chats yet"}
                 </span>
               </span>
             </Link>
             <span className="trow-act">
-              <Link href={`/student/tutors/new?id=${tutor.id}`}>Edit</Link>
-              <button type="button" onClick={() => void remove(tutor.id)}>
-                {pending === tutor.id ? "Confirm delete" : "Delete"}
-              </button>
+              <Link href={`/student/tutor/${tutor.id}/profile`}>Profile</Link>
             </span>
           </article>
         ))}
@@ -98,4 +74,11 @@ export default function TutorsPage() {
       ) : null}
     </>
   );
+}
+
+function chatWhen(iso: string) {
+  const label = shortWhen(iso);
+  if (label === "Today") return "today";
+  if (label === "Yesterday") return "yesterday";
+  return label;
 }
