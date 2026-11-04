@@ -8,12 +8,13 @@ import { topicStatus } from "../src/lib/gap.ts";
 import { draftMaterial } from "../src/lib/material-draft.ts";
 import { extractPdfText } from "../src/lib/pdf-text.ts";
 import { recommend } from "../src/lib/recommend.ts";
-import { ALLOWED_URL_PREFIXES, assembleResources } from "../src/lib/resources.ts";
+import { canonicalInterest, COURSES, filterCourses } from "../src/lib/courses.ts";
+import { acceptModelResources } from "../src/lib/resource-curate.ts";
+import { assembleResources, isCuratedResourceUrl, isStubCopy, isYoutubeWatchUrl } from "../src/lib/resources.ts";
 import { scoreQuiz } from "../src/lib/score.ts";
 import { lecturerReply } from "../src/lib/tutor-reply.ts";
 import { assertSameCourse, buildTutorInstructions, canCreateTutor, notesForCourse } from "../src/lib/tutors.ts";
-import { filterCourses, COURSES } from "../src/lib/courses.ts";
-import { isProfileComplete, presentProfile, resolveGreetingName, type ProfileFields } from "../src/lib/profile.ts";
+import { isProfileComplete, presentProfile, profileFromRow, resolveGreetingName, type ProfileFields } from "../src/lib/profile.ts";
 import { testCreateSchema } from "../src/lib/schemas.ts";
 import { acceptGeneratedQuestions, fillTestQuestions, normalizeTopics } from "../src/lib/test-questions.ts";
 import { createPaper, getPaper, mergeSealedQuestions, toPaper } from "../src/lib/test-repo.ts";
@@ -183,12 +184,10 @@ const video = assembleResources({
 });
 assert.ok(video.primary.length <= 3);
 assert.ok(video.alternates.length <= 2);
-assert.equal(video.primary[0]?.type, "youtube");
 for (const item of [...video.primary, ...video.alternates]) {
-  assert.equal(item.verified, false);
-  assert.match(`${item.title} ${item.why} ${item.searchQuery}`, /bayes/i);
-  if (item.url) assert.ok(ALLOWED_URL_PREFIXES.some((prefix) => item.url?.startsWith(prefix)));
-  assert.equal(Boolean(item.url?.includes("watch?v=")), false);
+  assert.equal(item.type, "youtube");
+  assert.equal(isYoutubeWatchUrl(item.url ?? ""), true);
+  assert.equal(isStubCopy(`${item.title} ${item.why}`), false);
 }
 const pdfFirst = assembleResources({
   subject: "Probability",
@@ -211,9 +210,62 @@ const unknown = assembleResources({
   preference: "mixed",
   weakTopic: "Zymurgy of clouds",
 });
-assert.ok(unknown.primary.length <= 3 && unknown.alternates.length <= 2);
-assert.ok([...unknown.primary, ...unknown.alternates].every((item) => item.url === null));
-assert.match(unknown.primary[0]?.searchQuery ?? "", /Zymurgy of clouds/);
+assert.equal(unknown.primary.length, 0);
+assert.equal(unknown.alternates.length, 0);
+const promptCards = assembleResources({
+  subject: "Prompt Engineering",
+  topic: "Prompt Engineering",
+  level: "intermediate",
+  preference: "mixed",
+});
+for (const item of [...promptCards.primary, ...promptCards.alternates]) {
+  assert.equal(isCuratedResourceUrl(item.url, item.type), true);
+  assert.equal(isStubCopy(`${item.title} ${item.why} ${item.source}`), false);
+  assert.equal(/youtube\.com\/results|google\.com\/search/i.test(item.url ?? ""), false);
+}
+const curated = acceptModelResources(
+  [
+    {
+      title: "ChatGPT Prompt Engineering for Developers",
+      url: "https://www.youtube.com/watch?v=H4YkA3_9p0E",
+      kind: "video",
+      why: "Short course with worked prompts.",
+      source: "DeepLearning.AI",
+    },
+    {
+      title: "Search youtube: Prompt Engineering",
+      url: "https://www.youtube.com/results?search_query=prompt+engineering",
+      kind: "video",
+      why: "No curated youtube link was available.",
+      source: "YouTube search",
+    },
+    {
+      title: "Prompt Engineering Guide",
+      url: "https://www.promptingguide.ai/",
+      kind: "notes",
+      why: "Reference notes on techniques.",
+      source: "DAIR.AI",
+    },
+    {
+      title: "Google results",
+      url: "https://www.google.com/search?q=prompt+engineering",
+      kind: "notes",
+      why: "A search page.",
+      source: "Google",
+    },
+  ],
+  "mixed",
+  "Prompt Engineering",
+);
+assert.equal(curated.length, 2);
+assert.ok(curated.every((item) => item.url && isCuratedResourceUrl(item.url, item.type)));
+assert.equal(acceptModelResources(curated.map((item) => ({
+  title: item.title,
+  url: item.url ?? "",
+  kind: item.type === "youtube" ? "video" as const : "notes" as const,
+  why: item.why,
+  source: item.source,
+})), "video", "Prompt Engineering").every((item) => item.type === "youtube"), true);
 
 const pack = draftMaterial(
   "STA 201 · Probability",
@@ -227,10 +279,15 @@ assert.ok(pack.questions.every(isValidMcq));
 const pdf = miniPdf("Photosynthesis uses light.");
 assert.match(extractPdfText(pdf), /Photosynthesis uses light/);
 
-assert.equal(COURSES.length, 53);
-assert.equal(filterCourses("sen 201").some((course) => course.name.startsWith("SEN 201")), true);
-assert.equal(filterCourses("csc205").some((course) => course.name.startsWith("CSC 205")), true);
+const COURSE_CODE = /\b(?:SEN|CSC|GNS|MTS|STS|EMT|PHY|CHM)\b|\b[A-Z]{2,}\s*\d{2,}\b/;
+assert.equal(COURSES.length, 55);
+assert.ok(COURSES.every((course) => !COURSE_CODE.test(course.name)));
+assert.equal(filterCourses("algebra").some((course) => course.name === "Algebra I"), true);
+assert.equal(filterCourses("algorithms").some((course) => course.name === "Algorithms"), true);
+assert.equal(filterCourses("sen 201").length, 0);
 assert.equal(filterCourses("no-such-course").length, 0);
+assert.equal(canonicalInterest("SEN 201 Software Engineering"), "Software Engineering");
+assert.equal(profileFromRow({ interests: ["SEN 201 Software Engineering", "React"] }).interests.join(","), "Software Engineering,React");
 
 const blank: ProfileFields = { displayName: "Learner", username: "", age: null, interests: [] };
 assert.equal(isProfileComplete(blank), false);
@@ -242,7 +299,7 @@ const ready = presentProfile(
     display_name: "Tolu Ade",
     username: "tolu_ade",
     age: 19,
-    interests: ["SEN 201 Software Engineering", "React"],
+    interests: ["Software Engineering", "React"],
   },
   { email: "ada@example.com", user_metadata: { full_name: "Ada Okonkwo" } },
 );

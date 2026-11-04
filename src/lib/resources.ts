@@ -1,17 +1,128 @@
 import type { ResourceBundle, ResourceItem, ResourcePreference, ResourceType } from "./types";
 
-/** Only these prefixes may be returned as URLs. Anything else becomes a search query. */
-export const ALLOWED_URL_PREFIXES = [
-  "https://www.khanacademy.org/",
-  "https://www.youtube.com/@",
-  "https://openstax.org/",
-  "https://docs.python.org/",
-  "https://developer.mozilla.org/",
-  "https://git-scm.com/",
-  "https://www.sqlite.org/",
-  "https://www.postgresql.org/docs/",
-  "https://seeing-theory.brown.edu/",
+const NOTES_HOSTS = [
+  "freecodecamp.org",
+  "udemy.com",
+  "developer.mozilla.org",
+  "khanacademy.org",
+  "openstax.org",
+  "deeplearning.ai",
+  "promptingguide.ai",
+  "dair.ai",
+  "react.dev",
+  "nextjs.org",
+  "javascript.info",
+  "theodinproject.com",
+  "roadmap.sh",
+  "python.org",
+  "git-scm.com",
+  "sqlite.org",
+  "postgresql.org",
+  "flutter.dev",
+  "nodejs.org",
+  "pytorch.org",
+  "scikit-learn.org",
+  "tensorflow.org",
+  "harvard.edu",
+  "mit.edu",
+  "coursera.org",
+  "edx.org",
+  "learn.microsoft.com",
+  "developer.apple.com",
+  "developer.android.com",
+  "web.dev",
+  "w3.org",
+  "brown.edu",
+  "wikipedia.org",
 ];
+
+function hostName(url: URL) {
+  return url.hostname.toLowerCase().replace(/^www\./, "");
+}
+
+function hostMatches(url: URL, host: string) {
+  const name = hostName(url);
+  return name === host || name.endsWith(`.${host}`);
+}
+
+function isSearchPage(url: URL) {
+  const host = hostName(url);
+  const path = url.pathname.toLowerCase();
+  if (path === "/results" || path.startsWith("/results/") || path.includes("/search")) return true;
+  if (host === "google.com" || host.endsWith(".google.com") || host.includes("bing.com") || host.includes("duckduckgo.")) {
+    return true;
+  }
+  if (url.searchParams.has("search_query")) return true;
+  return false;
+}
+
+/** A real YouTube watch page, not a channel or a search results URL. */
+export function isYoutubeWatchUrl(raw: string) {
+  let url: URL;
+  try {
+    url = new URL(raw);
+  } catch {
+    return false;
+  }
+  if (url.protocol !== "https:" || isSearchPage(url)) return false;
+  const host = hostName(url);
+  if (host === "youtu.be") {
+    const id = url.pathname.split("/").filter(Boolean)[0] ?? "";
+    return /^[A-Za-z0-9_-]{11}$/.test(id);
+  }
+  if (host === "youtube.com" || host === "m.youtube.com") {
+    if (url.pathname !== "/watch") return false;
+    return /^[A-Za-z0-9_-]{11}$/.test(url.searchParams.get("v") ?? "");
+  }
+  return false;
+}
+
+function isNotesPage(url: URL) {
+  if (isSearchPage(url)) return false;
+  if (hostMatches(url, "udemy.com") && !url.pathname.startsWith("/course/")) return false;
+  if (hostMatches(url, "coursera.org") && !/^\/(learn|specializations|professional-certificates)\//.test(url.pathname)) {
+    return false;
+  }
+  return NOTES_HOSTS.some((host) => hostMatches(url, host));
+}
+
+/** Real course or video pages only. Search URLs and channel homepages are rejected. */
+export function isCuratedResourceUrl(raw: string | null, type: ResourceType) {
+  if (!raw) return false;
+  let url: URL;
+  try {
+    url = new URL(raw);
+  } catch {
+    return false;
+  }
+  if (url.protocol !== "https:" || isSearchPage(url)) return false;
+  if (type === "youtube") return isYoutubeWatchUrl(raw);
+  if (type === "pdf" || type === "notes" || type === "course") return isNotesPage(url);
+  return false;
+}
+
+export function isStubCopy(text: string) {
+  return /search\s+(youtube|pdf|notes|google|query)|not a checked link|search query|placeholder/i.test(text);
+}
+
+export function sourcePill(url: string) {
+  try {
+    const host = hostName(new URL(url));
+    if (host.includes("youtube") || host === "youtu.be") return "YouTube";
+    if (host.includes("freecodecamp")) return "freeCodeCamp";
+    if (host.includes("udemy")) return "Udemy";
+    if (host.includes("mozilla")) return "MDN";
+    if (host.includes("deeplearning")) return "DeepLearning.AI";
+    if (host.includes("promptingguide") || host.includes("dair")) return "DAIR.AI";
+    if (host.includes("khanacademy")) return "Khan Academy";
+    if (host.includes("openstax")) return "OpenStax";
+    if (host.includes("wikipedia")) return "Wikipedia";
+    const label = host.split(".")[0] ?? "Source";
+    return label.charAt(0).toUpperCase() + label.slice(1);
+  } catch {
+    return "Source";
+  }
+}
 
 type CatalogItem = {
   title: string;
@@ -168,11 +279,6 @@ export function preferenceOrder(preference: ResourcePreference) {
   return ORDER[preference];
 }
 
-function safeUrl(url: string | null) {
-  if (!url) return null;
-  return ALLOWED_URL_PREFIXES.some((prefix) => url.startsWith(prefix)) ? url : null;
-}
-
 function normalizeLevel(level: string): "beginner" | "intermediate" | "advanced" {
   const text = level.toLowerCase();
   if (text.includes("begin") || text.includes("ss1") || text.includes("100l")) return "beginner";
@@ -185,34 +291,22 @@ function matchesTopic(item: CatalogItem, topic: string) {
   return item.topics.some((token) => token.length >= 4 && (needle.includes(token) || token.includes(needle)));
 }
 
-function searchStub(type: ResourceType, subject: string, topic: string): ResourceItem {
-  const query = `${topic} ${subject}`.trim();
-  const why =
-    type === "practice"
-      ? `Practice on ${topic} inside Knowva. This is not an external link.`
-      : `No curated ${type} link was available for ${topic}. This is a search query, not a checked link.`;
-  return {
-    title: type === "practice" ? `Practice: ${topic}` : `Search ${type}: ${query}`,
-    type,
-    url: null,
-    searchQuery: query,
-    why,
-    confidence: "low",
-    verified: false,
-    role: "primary",
-    source: type === "youtube" ? "YouTube search" : type === "course" ? "Coursera or edX search" : "Search query",
-  };
+export function typesForPreference(preference: ResourcePreference): ResourceType[] {
+  if (preference === "video") return ["youtube"];
+  if (preference === "pdf") return ["pdf", "notes", "course"];
+  if (preference === "course") return ["course", "notes", "pdf"];
+  return ["youtube", "pdf", "notes", "course"];
 }
 
-function toDraft(item: CatalogItem, topic: string): ResourceItem {
-  const url = safeUrl(item.url);
+function toDraft(item: CatalogItem, topic: string): ResourceItem | null {
+  if (!item.url || !isCuratedResourceUrl(item.url, item.type)) return null;
   return {
     title: item.title,
     type: item.type,
-    url,
-    searchQuery: `${topic}`.trim(),
+    url: item.url,
+    searchQuery: topic.trim(),
     why: item.why,
-    confidence: url ? "med" : "low",
+    confidence: "med",
     verified: false,
     role: "primary",
     source: item.source,
@@ -236,28 +330,14 @@ export function assembleResources(input: {
     }))
     .sort((a, b) => a.rank - b.rank);
 
+  const allowed = new Set(typesForPreference(input.preference));
   const picked: ResourceItem[] = [];
   for (const { item } of matched) {
     if (picked.length >= 5) break;
+    if (!allowed.has(item.type)) continue;
     const draft = toDraft(item, topic);
-    if (draft.url === null && item.url) {
-      picked.push({
-        ...draft,
-        why: `${item.why} The link was dropped because it is not on the curated allowlist.`,
-        confidence: "low",
-      });
-    } else {
-      picked.push(draft);
-    }
-  }
-
-  let fill = 0;
-  while (picked.length < 5 && fill < 12) {
-    const type = order[fill % order.length] ?? "notes";
-    fill += 1;
-    const stub = searchStub(type, input.subject, topic);
-    if (picked.some((item) => item.type === stub.type && item.title === stub.title)) continue;
-    picked.push(stub);
+    if (!draft || isStubCopy(draft.title) || isStubCopy(draft.why)) continue;
+    picked.push(draft);
   }
 
   const primary = picked.slice(0, 3).map((item) => ({ ...item, role: "primary" as const }));
@@ -273,42 +353,55 @@ export function assembleResources(input: {
   };
 }
 
+async function bodyLooksMissing(response: Response) {
+  const reader = response.body?.getReader();
+  if (!reader) return false;
+  try {
+    const { value } = await reader.read();
+    const text = value ? new TextDecoder().decode(value).slice(0, 4000) : "";
+    return /video unavailable|this video isn't available|page not found/i.test(text);
+  } catch {
+    return false;
+  } finally {
+    await reader.cancel().catch(() => undefined);
+  }
+}
+
 export async function verifyUrl(url: string) {
   const headers = { "user-agent": "KnowvaMVP/0.1 (educational link check)" };
   try {
-    const head = await fetch(url, { method: "HEAD", redirect: "follow", signal: AbortSignal.timeout(2500), headers });
-    if (head.ok) return true;
-    if (head.status === 404) return false;
+    const head = await fetch(url, { method: "HEAD", redirect: "follow", signal: AbortSignal.timeout(4000), headers });
+    if (head.status === 404 || head.status === 410) return false;
+    if (head.ok && !hostName(new URL(url)).includes("youtube") && hostName(new URL(url)) !== "youtu.be") return true;
   } catch {
     // Some hosts reject HEAD. Try GET before calling the link unreachable.
   }
   try {
-    const get = await fetch(url, { method: "GET", redirect: "follow", signal: AbortSignal.timeout(2500), headers });
-    return get.ok;
+    const get = await fetch(url, { method: "GET", redirect: "follow", signal: AbortSignal.timeout(5000), headers });
+    if (!get.ok) return false;
+    if (await bodyLooksMissing(get)) return false;
+    return true;
   } catch {
     return false;
   }
 }
 
-/** Marks `verified` only when a check succeeds. Unreachable curated URLs become search queries. */
+/** Keep a card only when the URL opens. Anything else is omitted, never turned into a search stub. */
 export async function verifyBundle(bundle: ResourceBundle): Promise<ResourceBundle> {
-  const check = async (item: ResourceItem): Promise<ResourceItem> => {
-    if (!item.url) return { ...item, verified: false };
+  const check = async (item: ResourceItem): Promise<ResourceItem | null> => {
+    if (!item.url || !isCuratedResourceUrl(item.url, item.type)) return null;
+    if (isStubCopy(item.title) || isStubCopy(item.why) || isStubCopy(item.source)) return null;
     const ok = await verifyUrl(item.url);
-    if (!ok) {
-      return {
-        ...item,
-        url: null,
-        verified: false,
-        confidence: "low",
-        why: `${item.why} The curated link was not reachable, so this is a search query instead.`,
-      };
-    }
+    if (!ok) return null;
     return { ...item, verified: true, confidence: "high" };
   };
   const [primary, alternates] = await Promise.all([
     Promise.all(bundle.primary.map(check)),
     Promise.all(bundle.alternates.map(check)),
   ]);
-  return { ...bundle, primary, alternates };
+  return {
+    ...bundle,
+    primary: primary.filter((item): item is ResourceItem => item !== null),
+    alternates: alternates.filter((item): item is ResourceItem => item !== null),
+  };
 }

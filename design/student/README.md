@@ -23,4 +23,5 @@ Screenshots: `screens/*.png` (420 wide).
 ## Update 4 Nov 2026 — onboarding + empty Home
 - `onboarding.html`: first-run after Google sign-up (name, username, age, searchable interests). Save → `/student`.
 - `dashboard.html` is now the empty state (no seed tutors; greeting = profile display name). `dashboard-filled.html` keeps the with-tutors reference.
-- Course catalog in onboarding is static mock data; the app keeps it in `src/lib/courses.ts`.
+- Course catalog in onboarding is title-only (no course codes). The app keeps the same 55 titles in `src/lib/courses.ts`.
+- `learn.html`: Discover shows curated cards (type, Curated badge, title, source, why, Open and Save). No search stubs.

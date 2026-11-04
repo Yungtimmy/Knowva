@@ -1,4 +1,4 @@
-import { COURSE_SET } from "./courses";
+import { COURSE_SET, canonicalInterest } from "./courses";
 import { emailLocal, initials } from "./student-format";
 
 export const USERNAME_PATTERN = /^[a-z0-9_.]{3,20}$/;
@@ -19,7 +19,14 @@ export type ProfileRow = {
 
 export function profileFromRow(row: ProfileRow): ProfileFields {
   const interests = Array.isArray(row?.interests)
-    ? row.interests.filter((item): item is string => typeof item === "string" && COURSE_SET.has(item))
+    ? [
+        ...new Set(
+          row.interests
+            .filter((item): item is string => typeof item === "string")
+            .map((item) => canonicalInterest(item))
+            .filter((item): item is string => item !== null && COURSE_SET.has(item)),
+        ),
+      ]
     : [];
   const rawAge = row?.age;
   const age =

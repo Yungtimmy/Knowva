@@ -108,7 +108,7 @@ export function OnboardingForm({ suggestedName }: { suggestedName: string }) {
           <input
             type="search"
             value={query}
-            placeholder="Search courses, e.g. CSC 205, React, Statistics"
+            placeholder="Search courses, e.g. Algebra, Algorithms, React"
             aria-label="Search courses"
             autoComplete="off"
             onChange={(event) => setQuery(event.target.value)}
@@ -130,7 +130,7 @@ export function OnboardingForm({ suggestedName }: { suggestedName: string }) {
               );
             })}
           </div>
-          {visible.length === 0 ? <p className="meta">No match. Try a course code or a shorter word.</p> : null}
+          {visible.length === 0 ? <p className="meta">No match. Try a shorter word, like Algebra or React.</p> : null}
           <small className="meta" style={interestHint ? { color: "#C7360F" } : undefined}>
             Pick at least one.
           </small>
