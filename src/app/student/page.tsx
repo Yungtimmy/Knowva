@@ -3,10 +3,11 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { KnowvaClouds } from "@/components/KnowvaClouds";
-import { Mascot, mascotFor } from "@/components/Mascot";
+import { Mascot } from "@/components/Mascot";
 import { useGreetingName } from "@/components/StudentShell";
 import { getJson } from "@/lib/api-client";
 import { tutorTitle } from "@/lib/demo";
+import { mascotColorFor } from "@/lib/mascot-color";
 import { cardTime, clip, deskDate, greeting, levelLabel, streakDays } from "@/lib/student-format";
 import type { ProgressReport, Tutor, TutorCard, TutorStatus } from "@/lib/types";
 
@@ -22,15 +23,6 @@ const STATUS_LABEL: Record<TutorStatus, string> = {
   ready: "Ready",
 };
 
-const CYCLE = [
-  { variant: "blue" as const, smile: true, tile: "#F7F4EC" },
-  { variant: "orange" as const, smile: false, tile: "#F7F4EC" },
-  { variant: "yellow" as const, smile: true, tile: "#F7F4EC" },
-  { variant: "ink" as const, smile: false, tile: "#1C1B19" },
-];
-
-const KNOWN = new Set(["Prompt engineering", "Software engineering", "Web APIs", "Machine learning"]);
-
 type NextStep = { href: string; title: string; detail: string };
 
 type Desk = {
@@ -38,11 +30,6 @@ type Desk = {
   streak: number;
   next: NextStep[];
 };
-
-function faceFor(subject: string, index: number) {
-  if (KNOWN.has(subject)) return mascotFor(subject);
-  return CYCLE[index % CYCLE.length] ?? CYCLE[0];
-}
 
 function savedCard(tutor: Tutor): TutorCard {
   return {
@@ -54,6 +41,7 @@ function savedCard(tutor: Tutor): TutorCard {
     status: "ready",
     preview: clip(tutor.focus, 120),
     updatedAt: cardTime(tutor.updatedAt),
+    mascotColor: tutor.mascotColor || mascotColorFor(tutor.course, tutor.id),
   };
 }
 
@@ -143,7 +131,6 @@ export default function StudentHomePage() {
               </div>
             ) : null}
             {desk.cards.map((tutor, index) => {
-              const face = faceFor(tutor.subject, index);
               const href = `/student/tutor/${tutor.id}`;
               return (
                 <article
@@ -153,8 +140,8 @@ export default function StudentHomePage() {
                   tabIndex={0}
                 >
                   <div className="tc-head">
-                    <div className="tc-face" style={{ background: face.tile }}>
-                      <Mascot variant={face.variant} smile={face.smile} />
+                    <div className="tc-face" style={{ background: "#F7F4EC" }}>
+                      <Mascot color={tutor.mascotColor ?? mascotColorFor(tutor.subject, tutor.id)} />
                     </div>
                     <div className="tc-id">
                       <h3>{tutor.name ?? tutorTitle(tutor.subject)}</h3>

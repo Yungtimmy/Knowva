@@ -1,6 +1,15 @@
 import { NextResponse } from "next/server";
+import { appendTutorMessages } from "@/lib/chat-repo";
+import {
+  asStoredMessage,
+  attachmentsFromResources,
+  attachmentsFromText,
+  mergeAttachments,
+  messageBody,
+} from "@/lib/chat-thread";
 import { demoPayload, modelFailed, parseBody, readJson } from "@/lib/http";
 import { generateStructured, llmConfigured } from "@/lib/llm";
+import { mascotColorFor } from "@/lib/mascot-color";
 import { resolveOwner } from "@/lib/owner";
 import { assembleResources, verifyBundle } from "@/lib/resources";
 import { modelTutorSchema, tutorChatSchema } from "@/lib/schemas";
@@ -61,6 +70,7 @@ export async function POST(request: Request) {
     level,
     explanationStyle: style,
     goals: [],
+    mascotColor: mascotColorFor(course, "session"),
     createdAt: "",
     updatedAt: "",
   };
@@ -82,11 +92,49 @@ export async function POST(request: Request) {
   const guarded = isOffCourse(course, input.message) || isRuleBreakAttempt(input.message);
   const replyInput = { name, course, topic, style, message: input.message, mode: input.mode };
 
-  if (!llmConfigured() || guarded) {
-    const message = lecturerReply(replyInput);
-    const body = { message, resources, course, tutorId: tutor?.id ?? null, guarded };
-    if (!llmConfigured()) return demoPayload(body);
+  async function deliver(message: TutorMessage, flags: { guarded: boolean; demo: boolean }) {
+    const sentAt = Date.now();
+    const tutorTurn = asStoredMessage(
+      { ...message, createdAt: new Date(sentAt + 1).toISOString() },
+      {
+        attachments: mergeAttachments(
+          attachmentsFromResources(resources),
+          attachmentsFromText(messageBody(message)),
+        ),
+      },
+    );
+    let messages: TutorMessage[] | undefined;
+    if (tutor) {
+      const userTurn = asStoredMessage({
+        role: "user",
+        short: input.message,
+        steps: [],
+        remember: "",
+        createdAt: new Date(sentAt).toISOString(),
+        attachments: attachmentsFromText(input.message),
+      });
+      try {
+        messages = await appendTutorMessages(owner, tutor.id, [userTurn, tutorTurn]);
+      } catch (error) {
+        console.error("POST /api/tutor/chat persist", error instanceof Error ? error.name : "error");
+        return NextResponse.json({ error: "Could not save this chat." }, { status: 500 });
+      }
+    }
+    const savedTutor = messages?.[messages.length - 1] ?? tutorTurn;
+    const body = {
+      message: savedTutor,
+      messages,
+      resources,
+      course,
+      tutorId: tutor?.id ?? null,
+      guarded: flags.guarded,
+    };
+    if (flags.demo) return demoPayload(body);
     return NextResponse.json({ demo: false, ...body });
+  }
+
+  if (!llmConfigured() || guarded) {
+    return deliver(lecturerReply(replyInput), { guarded, demo: !llmConfigured() });
   }
 
   try {
@@ -102,21 +150,16 @@ export async function POST(request: Request) {
       }),
       buildTutorInstructions(active),
     );
-    const message: TutorMessage = {
-      role: "tutor",
-      short: output.short,
-      steps: output.steps,
-      remember: output.remember,
-      next: output.next ?? output.remember,
-    };
-    return NextResponse.json({
-      demo: false,
-      message,
-      resources,
-      course,
-      tutorId: tutor?.id ?? null,
-      guarded: false,
-    });
+    return deliver(
+      {
+        role: "tutor",
+        short: output.short,
+        steps: output.steps,
+        remember: output.remember,
+        next: output.next ?? output.remember,
+      },
+      { guarded: false, demo: false },
+    );
   } catch {
     return modelFailed();
   }

@@ -1,6 +1,6 @@
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
-import type { Question, StudyPack, TestDifficulty, TestResult, Tutor } from "./types";
+import type { Question, StudyPack, TestDifficulty, TestResult, Tutor, TutorMessage } from "./types";
 
 export type StoredPaper = {
   id: string;
@@ -21,6 +21,8 @@ type Bucket = {
   tutors: Tutor[];
   papers: StoredPaper[];
   materials: StudyPack[];
+  /** Saved chat turns keyed by tutor id. Absent on buckets written before chat history. */
+  threads?: Record<string, TutorMessage[]>;
 };
 
 type FileShape = Record<string, Bucket>;
@@ -31,7 +33,7 @@ function bucketFile() {
 }
 
 function emptyBucket(): Bucket {
-  return { tutors: [], papers: [], materials: [] };
+  return { tutors: [], papers: [], materials: [], threads: {} };
 }
 
 let queue: Promise<void> = Promise.resolve();

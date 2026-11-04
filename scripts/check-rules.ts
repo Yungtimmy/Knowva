@@ -12,7 +12,11 @@ import { canonicalInterest, COURSES, filterCourses } from "../src/lib/courses.ts
 import { acceptModelResources } from "../src/lib/resource-curate.ts";
 import { assembleResources, isCuratedResourceUrl, isStubCopy, isYoutubeWatchUrl } from "../src/lib/resources.ts";
 import { scoreQuiz } from "../src/lib/score.ts";
+import { chatMatchCount } from "../src/lib/chat-thread.ts";
+import { mascotColorFor } from "../src/lib/mascot-color.ts";
+import { appendTutorMessages, listTutorMessages } from "../src/lib/chat-repo.ts";
 import { lecturerReply } from "../src/lib/tutor-reply.ts";
+import { createTutor } from "../src/lib/tutor-repo.ts";
 import { assertSameCourse, buildTutorInstructions, canCreateTutor, notesForCourse } from "../src/lib/tutors.ts";
 import { isProfileComplete, presentProfile, profileFromRow, resolveGreetingName, type ProfileFields } from "../src/lib/profile.ts";
 import { testCreateSchema } from "../src/lib/schemas.ts";
@@ -369,6 +373,61 @@ assert.equal(loaded?.questions.length, 10);
 assert.equal(loaded?.questions[0]?.answerIndex, paperQuestions[0]?.answerIndex);
 const pub = toPaper(loaded!);
 assert.equal("answerIndex" in pub.questions[0], false);
+
+assert.equal(mascotColorFor("Mathematics"), "#2412B0");
+assert.equal(mascotColorFor("Maths"), "#2412B0");
+assert.equal(mascotColorFor("Biology"), "#FF4A1C");
+assert.equal(mascotColorFor("Physics"), "#FBE062");
+assert.equal(mascotColorFor("English Language"), "#2F6B4F");
+assert.equal(mascotColorFor("History", "tutor-a"), mascotColorFor("History", "tutor-a"));
+assert.notEqual(mascotColorFor("Biology"), mascotColorFor("Physics"));
+assert.equal(
+  chatMatchCount(
+    [
+      { role: "tutor", short: "Chlorophyll in the leaf traps that light.", steps: ["Light hits chlorophyll in the thylakoid."], remember: "Light in." },
+    ],
+    "chlorophyll",
+  ),
+  2,
+);
+
+const biology = await createTutor(owner, {
+  name: "Biology Tutor",
+  course: "Biology",
+  focus: "Photosynthesis",
+  level: "intermediate",
+  explanationStyle: "step_by_step",
+  goals: [],
+});
+assert.equal(biology.mascotColor, "#FF4A1C");
+const maths = await createTutor(owner, {
+  name: "Maths Tutor",
+  course: "Mathematics",
+  focus: "Quadratics",
+  level: "beginner",
+  explanationStyle: "concise",
+  goals: ["practise_problems"],
+});
+assert.equal(maths.mascotColor, "#2412B0");
+assert.notEqual(biology.mascotColor, maths.mascotColor);
+await appendTutorMessages(owner, biology.id, [
+  { role: "user", short: "Why do plants need light?", steps: [], remember: "" },
+  {
+    role: "tutor",
+    short: "Chlorophyll in the leaf traps that light.",
+    steps: ["Light hits chlorophyll in the thylakoid."],
+    remember: "Light in, water split, oxygen out.",
+    attachments: [{ kind: "pdf", title: "Photosynthesis notes.pdf", url: "https://example.com/notes.pdf" }],
+  },
+]);
+const reopened = await listTutorMessages(owner, biology.id);
+assert.equal(reopened.length, 2);
+assert.match(reopened[1]?.short ?? "", /Chlorophyll/);
+assert.equal(reopened[1]?.attachments?.[0]?.kind, "pdf");
+assert.equal(reopened[0]?.role, "user");
+const reopenedAgain = await listTutorMessages(owner, biology.id);
+assert.equal(reopenedAgain.length, 2);
+assert.equal(reopenedAgain[1]?.id, reopened[1]?.id);
 
 console.log("rules ok");
 

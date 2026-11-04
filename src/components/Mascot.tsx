@@ -9,15 +9,19 @@ const FILLS = {
 } as const;
 
 export function Mascot({
-  variant,
+  variant = "blue",
+  color,
   smile = false,
   className = "mascot",
 }: {
-  variant: keyof typeof FILLS;
+  variant?: keyof typeof FILLS;
+  /** Per-tutor hex. Overrides the named variant fill. Eyes stay cream with ink pupils. */
+  color?: string;
   smile?: boolean;
   className?: string;
 }) {
-  const fill = FILLS[variant];
+  const named = FILLS[variant];
+  const fill = color ? { body: color, eye: "#FFFDF8", pupil: "#1C1B19" } : named;
   return (
     <svg className={className} viewBox="0 0 110 90" aria-hidden="true">
       <path d={BLOB} fill={fill.body} />

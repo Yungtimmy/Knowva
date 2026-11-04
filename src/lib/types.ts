@@ -19,8 +19,21 @@ export type Tutor = {
   level: LearningLevel;
   explanationStyle: ExplanationStyle;
   goals: LearningGoal[];
+  /** Stable fill for this tutor's cloud mascot. Set once when the tutor is created. */
+  mascotColor: string;
+  /** When the latest saved chat turn was written. Null until the first message. */
+  lastChatAt?: string | null;
   createdAt: string;
   updatedAt: string;
+};
+
+export type ChatAttachmentKind = "link" | "pdf" | "image";
+
+/** A link, PDF, or image that appeared in a saved chat turn. */
+export type ChatAttachment = {
+  kind: ChatAttachmentKind;
+  title: string;
+  url: string;
 };
 
 export type ResourcePreference = "video" | "pdf" | "course" | "mixed";
@@ -149,6 +162,12 @@ export type TutorMessage = {
   remember: string;
   /** One next step or check question. Tutor turns only. */
   next?: string;
+  /** Stable id once the turn is saved. Search and media jump to this. */
+  id?: string;
+  createdAt?: string;
+  /** Plain text indexed by in-chat search. Structured fields still render in the thread. */
+  body?: string;
+  attachments?: ChatAttachment[];
 };
 
 export type Question = {
@@ -196,6 +215,8 @@ export type TutorCard = {
   updatedAt: string;
   /** Set when the card is a saved tutor rather than a sample desk card. */
   name?: string;
+  /** Saved tutor mascot fill. Sample cards leave this empty and pick a colour from the subject. */
+  mascotColor?: string;
 };
 
 export type TeacherClass = {
