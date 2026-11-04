@@ -136,7 +136,7 @@ export default function LandingPage() {
       <section className={styles.cta} id="pricing">
         <KnowvaClouds size="cta" />
         <h3>Your AI tutors are ready when you are.</h3>
-        <p>Exam prep for WAEC, GCSE and beyond. Free to start, on your phone.</p>
+        <p>Exam prep for school and beyond. Free to start, on your phone.</p>
         <Link className={styles.btn} href="/signup?next=/student">
           Start learning free
         </Link>
