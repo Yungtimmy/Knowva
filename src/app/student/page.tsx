@@ -54,7 +54,7 @@ function nextSteps(report: ProgressReport): NextStep[] {
   if (steps.length === 0) {
     return [
       { href: "/student/tests", title: "Start a test", detail: "Test Centre" },
-      { href: "/student/progress", title: "See topic scores", detail: `${report.testsTaken} tests taken` },
+      { href: "/student/profile", title: "See topic scores", detail: `${report.testsTaken} tests taken` },
     ];
   }
   if (steps.length === 1) {
@@ -86,7 +86,7 @@ export default function StudentHomePage() {
       let next: NextStep[] = saved
         ? [
             { href: `/student/tutor/${first?.id ?? ""}`, title: `Open ${first?.name ?? "your tutor"}`, detail: first?.course ?? "Your course" },
-            { href: "/student/tests", title: "Start a test", detail: "Scores land on Progress" },
+            { href: "/student/tests", title: "Start a test", detail: "Scores land on your profile" },
           ]
         : [{ href: "/student/tutors/new", title: "Create a tutor", detail: "Start with the course you need most" }];
       if (progress && progress.testsTaken > 0) {

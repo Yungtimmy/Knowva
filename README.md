@@ -74,14 +74,14 @@ Stack: Next.js App Router, TypeScript, Supabase Auth + Postgres, server LLM call
 | `/student/tests` | Test Centre. Start a course MCQ |
 | `/student/tests/[id]` | Take a test. Tab bar hidden. Tutor chat locked |
 | `/student/tests/[id]/results` | Score, explanations, weak topics |
-| `/student/progress` | Test history and topic percentages |
+| `/student/profile` | Name, username, age, interests, and test history. `/student/progress` redirects here |
 | `/student/quiz/[quizId]` | Practice quiz, separate from Test Centre. `?review=1` or `#review` opens the few-shot results state |
 | `/teacher` and `/teacher/*` | Redirect to `/student`. Lecturer screens are not in the product |
 | `/student/onboarding` | Name, username, age, and interests. Required until the profile is complete. No tab bar |
 | `/login` | Google sign-in. Required before `/student` |
 | `/signup` | Redirects to `/login?mode=signup` |
 
-Student tabs: Home, Tutors, Learn, Tests, Progress. Practice quizzes stay off that bar.
+Student tabs: Home, Tutors, Learn, Tests, Profile. The header avatar opens the same profile page. Practice quizzes stay off that bar.
 
 Student screens follow `design/student/` (including the PRD v1 mocks: `tutors.html`, `create-tutor.html`, `learn.html`, `test-centre.html`, `test-take.html`, `test-results.html`, `progress.html`). The React routes are thin wiring over those class names. Timed tests are not in this build. Test take is untimed.
 

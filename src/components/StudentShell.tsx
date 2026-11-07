@@ -17,7 +17,7 @@ const TABS = [
   { id: "tutors", href: "/student/tutors", label: "Tutors" },
   { id: "learn", href: "/student/learn", label: "Learn" },
   { id: "tests", href: "/student/tests", label: "Tests" },
-  { id: "progress", href: "/student/progress", label: "Progress" },
+  { id: "profile", href: "/student/profile", label: "Profile" },
 ] as const;
 
 function tabId(pathname: string) {
@@ -25,7 +25,7 @@ function tabId(pathname: string) {
   if (pathname.startsWith("/student/tutors") || pathname.startsWith("/student/tutor")) return "tutors";
   if (pathname.startsWith("/student/learn") || pathname.startsWith("/student/materials")) return "learn";
   if (pathname.startsWith("/student/tests")) return "tests";
-  if (pathname.startsWith("/student/progress")) return "progress";
+  if (pathname.startsWith("/student/profile")) return "profile";
   return "home";
 }
 
@@ -79,9 +79,19 @@ export function StudentShell({ name, children }: { name: string; children: React
           {kind === "lock" ? null : <KnowvaClouds size="brand" />}
           {kind === "lock" ? (
             <span className="meta">Untimed</span>
+          ) : onboard ? (
+            <span className="avatar" aria-hidden="true">
+              ·
+            </span>
           ) : (
-            <Link href="/login" className="avatar" style={{ textDecoration: "none" }} aria-label="Account">
-              {onboard ? "·" : initials(name)}
+            <Link
+              href="/student/profile"
+              className="avatar"
+              style={{ textDecoration: "none" }}
+              aria-label="Your profile"
+              aria-current={active === "profile" ? "page" : undefined}
+            >
+              {initials(name)}
             </Link>
           )}
         </header>
@@ -143,7 +153,8 @@ function TabIcon({ id }: { id: (typeof TABS)[number]["id"] }) {
   }
   return (
     <svg viewBox="0 0 24 24" aria-hidden="true">
-      <path d="M4 20V10M10 20V4M16 20v-7M22 20H2" />
+      <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+      <circle cx="12" cy="7" r="4" />
     </svg>
   );
 }
