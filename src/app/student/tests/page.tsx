@@ -132,7 +132,7 @@ function TestCentre() {
     <>
       <h1>Test Centre</h1>
       <p className="meta" style={{ margin: "4px 0 18px" }}>
-        Formal tests, scored and saved to Progress. For quick practice, ask your tutor for a quiz.
+        Formal tests, scored and saved to your profile. For quick practice, ask your tutor for a quiz.
       </p>
       {open ? (
         <p className="note">
