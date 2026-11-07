@@ -11,7 +11,9 @@ export default async function StudentLayout({ children }: { children: React.Reac
   return (
     <>
       <DesignStyles href="/design/student/student.css" />
-      <StudentShell name={profile.greetingName}>{children}</StudentShell>
+      <StudentShell name={profile.greetingName} username={profile.username} avatarUrl={profile.avatarUrl}>
+        {children}
+      </StudentShell>
     </>
   );
 }

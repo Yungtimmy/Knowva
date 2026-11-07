@@ -15,6 +15,7 @@ export type ProfileRow = {
   username?: string | null;
   age?: number | string | null;
   interests?: unknown;
+  avatar_url?: string | null;
 } | null;
 
 export function profileFromRow(row: ProfileRow): ProfileFields {
@@ -93,6 +94,7 @@ export function presentProfile(
   const greetingName = resolveGreetingName(fields, hints);
   return {
     ...fields,
+    avatarUrl: typeof row?.avatar_url === "string" ? row.avatar_url.trim() : "",
     complete: isProfileComplete(fields),
     greetingName,
     suggestedName: suggestedProfileName(fields, hints),

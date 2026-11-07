@@ -7,9 +7,15 @@ import { KnowvaClouds } from "@/components/KnowvaClouds";
 import { initials } from "@/lib/student-format";
 
 const GreetingName = createContext("there");
+const Username = createContext("");
 
 export function useGreetingName() {
   return useContext(GreetingName);
+}
+
+/** The handle from onboarding. Greetings on Home use it ahead of the full name. */
+export function useUsername() {
+  return useContext(Username);
 }
 
 const TABS = [
@@ -40,7 +46,17 @@ function headerKind(pathname: string) {
   return "logo";
 }
 
-export function StudentShell({ name, children }: { name: string; children: React.ReactNode }) {
+export function StudentShell({
+  name,
+  username = "",
+  avatarUrl = "",
+  children,
+}: {
+  name: string;
+  username?: string;
+  avatarUrl?: string;
+  children: React.ReactNode;
+}) {
   const pathname = usePathname();
   const active = tabId(pathname);
   const kind = headerKind(pathname);
@@ -50,68 +66,70 @@ export function StudentShell({ name, children }: { name: string; children: React
   const mainClass = onboard ? "app onboard" : chat ? "app chat" : active === "home" && kind !== "lock" ? "app dash" : "app";
   return (
     <GreetingName.Provider value={name}>
-      <main className={mainClass}>
-        {practice ? (
-          <p className="meta" style={{ marginBottom: 8 }}>
-            Practice quiz · not graded as a test
-          </p>
-        ) : null}
-        <header className="top">
-          {kind === "lock" ? (
-            <span className="lock">Test in progress · tutor locked</span>
-          ) : kind === "tutors" ? (
-            <Link className="back" href="/student/tutors">
-              ← My tutors
-            </Link>
-          ) : kind === "tests" ? (
-            <Link className="back" href="/student/tests">
-              ← Test Centre
-            </Link>
-          ) : (
-            <Link className="logo" href={onboard ? "/student/onboarding" : "/student"}>
-              <svg width="18" height="12" viewBox="0 0 22 14" aria-hidden="true">
-                <path d="M11 0 22 5 11 10 0 5Z" fill="#FF4A1C" transform="rotate(-14 11 5)" />
-                <path d="M5 8v4h10V8" fill="#FF4A1C" transform="rotate(-14 11 5)" />
-              </svg>
-              Knowva
-            </Link>
-          )}
-          {kind === "lock" ? null : <KnowvaClouds size="brand" />}
-          {kind === "lock" ? (
-            <span className="meta">Untimed</span>
-          ) : onboard ? (
-            <span className="avatar" aria-hidden="true">
-              ·
-            </span>
-          ) : (
-            <Link
-              href="/student/profile"
-              className="avatar"
-              style={{ textDecoration: "none" }}
-              aria-label="Your profile"
-              aria-current={active === "profile" ? "page" : undefined}
-            >
-              {initials(name)}
-            </Link>
-          )}
-        </header>
-        {children}
-      </main>
-      {kind === "lock" || onboard ? null : (
-        <nav className="tabbar" aria-label="Knowva">
-          {TABS.map((tab) => (
-            <Link
-              key={tab.id}
-              href={tab.href}
-              className={active === tab.id ? "on" : undefined}
-              aria-current={active === tab.id ? "page" : undefined}
-            >
-              <TabIcon id={tab.id} />
-              {tab.label}
-            </Link>
-          ))}
-        </nav>
-      )}
+      <Username.Provider value={username}>
+        <main className={mainClass}>
+          {practice ? (
+            <p className="meta" style={{ marginBottom: 8 }}>
+              Practice quiz · not graded as a test
+            </p>
+          ) : null}
+          <header className="top">
+            {kind === "lock" ? (
+              <span className="lock">Test in progress · tutor locked</span>
+            ) : kind === "tutors" ? (
+              <Link className="back" href="/student/tutors">
+                ← My tutors
+              </Link>
+            ) : kind === "tests" ? (
+              <Link className="back" href="/student/tests">
+                ← Test Centre
+              </Link>
+            ) : (
+              <Link className="logo" href={onboard ? "/student/onboarding" : "/student"}>
+                <svg width="18" height="12" viewBox="0 0 22 14" aria-hidden="true">
+                  <path d="M11 0 22 5 11 10 0 5Z" fill="#FF4A1C" transform="rotate(-14 11 5)" />
+                  <path d="M5 8v4h10V8" fill="#FF4A1C" transform="rotate(-14 11 5)" />
+                </svg>
+                Knowva
+              </Link>
+            )}
+            {kind === "lock" ? null : <KnowvaClouds size="brand" />}
+            {kind === "lock" ? (
+              <span className="meta">Untimed</span>
+            ) : onboard ? (
+              <span className="avatar" aria-hidden="true">
+                ·
+              </span>
+            ) : (
+              <Link
+                href="/student/profile"
+                className="avatar"
+                style={{ textDecoration: "none", overflow: "hidden" }}
+                aria-label="Your profile"
+                aria-current={active === "profile" ? "page" : undefined}
+              >
+                {avatarUrl ? <img src={avatarUrl} alt="" /> : initials(name)}
+              </Link>
+            )}
+          </header>
+          {children}
+        </main>
+        {kind === "lock" || onboard ? null : (
+          <nav className="tabbar" aria-label="Knowva">
+            {TABS.map((tab) => (
+              <Link
+                key={tab.id}
+                href={tab.href}
+                className={active === tab.id ? "on" : undefined}
+                aria-current={active === tab.id ? "page" : undefined}
+              >
+                <TabIcon id={tab.id} />
+                {tab.label}
+              </Link>
+            ))}
+          </nav>
+        )}
+      </Username.Provider>
     </GreetingName.Provider>
   );
 }

@@ -3,8 +3,9 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { KnowvaClouds } from "@/components/KnowvaClouds";
+import { LoadingMascot } from "@/components/LoadingMascot";
 import { Mascot } from "@/components/Mascot";
-import { useGreetingName } from "@/components/StudentShell";
+import { useGreetingName, useUsername } from "@/components/StudentShell";
 import { getJson } from "@/lib/api-client";
 import { tutorTitle } from "@/lib/demo";
 import { mascotColorFor } from "@/lib/mascot-color";
@@ -65,6 +66,9 @@ function nextSteps(report: ProgressReport): NextStep[] {
 
 export default function StudentHomePage() {
   const name = useGreetingName();
+  const username = useUsername();
+  // Home greets the handle chosen at onboarding, falling back to the full name.
+  const greetingName = username || name;
   const [hello, setHello] = useState("");
   const [when, setWhen] = useState("");
   const [desk, setDesk] = useState<Desk | null>(null);
@@ -108,14 +112,14 @@ export default function StudentHomePage() {
     <>
       <section className="hello">
         <p className="meta">{when}</p>
-        <h1>{hello ? `${hello}, ${name}` : name}</h1>
-        <p>
-          {desk && desk.cards.length > 0
-            ? "Your tutors are on the desk. Pick one and keep going."
-            : desk
-              ? "No tutors yet. Create your first and it will show up here."
-              : "Opening your desk."}
-        </p>
+        <h1>{hello ? `${hello}, ${greetingName}` : greetingName}</h1>
+        {desk ? (
+          <p>
+            {desk.cards.length > 0
+              ? "Your tutors are on the desk. Pick one and keep going."
+              : "No tutors yet. Create your first and it will show up here."}
+          </p>
+        ) : null}
       </section>
       {desk ? (
         <div className="dash-grid">
@@ -209,7 +213,7 @@ export default function StudentHomePage() {
           </aside>
         </div>
       ) : (
-        <p className="meta">Opening your desk.</p>
+        <LoadingMascot />
       )}
     </>
   );

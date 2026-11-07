@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { LoadingMascot } from "@/components/LoadingMascot";
 import { getJson } from "@/lib/api-client";
 import type { PresentedProfile } from "@/lib/profile";
 import { shortWhen } from "@/lib/student-format";
@@ -19,7 +20,32 @@ function detailsLine(profile: PresentedProfile) {
 export default function ProfilePage() {
   const [profile, setProfile] = useState<PresentedProfile | null>(null);
   const [report, setReport] = useState<ProgressReport | null>(null);
-  const [note, setNote] = useState("Loading your profile.");
+  const [note, setNote] = useState("");
+  const [photoNote, setPhotoNote] = useState("");
+  const [uploading, setUploading] = useState(false);
+  const fileInput = useRef<HTMLInputElement>(null);
+
+  async function upload(event: React.ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file) return;
+    setUploading(true);
+    setPhotoNote("");
+    try {
+      const body = new FormData();
+      body.append("file", file);
+      const response = await fetch("/api/profile/avatar", { method: "POST", body });
+      const data = (await response.json().catch(() => ({}))) as { avatarUrl?: string; error?: string };
+      const avatarUrl = data.avatarUrl;
+      if (!response.ok || !avatarUrl) throw new Error(data.error || "Could not upload that photo.");
+      setProfile((current) => (current ? { ...current, avatarUrl } : current));
+      setPhotoNote("Photo updated.");
+    } catch (error) {
+      setPhotoNote(error instanceof Error ? error.message : "Could not upload that photo.");
+    } finally {
+      setUploading(false);
+    }
+  }
 
   useEffect(() => {
     let cancel = false;
@@ -47,7 +73,7 @@ export default function ProfilePage() {
     };
   }, []);
 
-  if (!profile) return <p className="meta">{note}</p>;
+  if (!profile) return note ? <p className="meta">{note}</p> : <LoadingMascot />;
 
   const names = report?.topics.map((topic) => topic.topic) ?? [];
   const shared = new Set(names.filter((name, index) => names.indexOf(name) !== index));
@@ -61,8 +87,8 @@ export default function ProfilePage() {
       </p>
       <section className="card">
         <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-          <span className="avatar" style={{ width: 56, height: 56, fontSize: 18 }}>
-            {profile.initials}
+          <span className="avatar" style={{ width: 56, height: 56, fontSize: 18, flex: "none", overflow: "hidden" }}>
+            {profile.avatarUrl ? <img src={profile.avatarUrl} alt="" /> : profile.initials}
           </span>
           <div style={{ minWidth: 0 }}>
             <b style={{ fontSize: 18 }}>{profile.displayName || profile.greetingName}</b>
@@ -70,6 +96,28 @@ export default function ProfilePage() {
               {details || "Student"}
             </p>
           </div>
+        </div>
+        <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap", marginTop: 14 }}>
+          <button
+            type="button"
+            className="btn btn-ghost btn-sm"
+            onClick={() => fileInput.current?.click()}
+            disabled={uploading}
+          >
+            {uploading ? "Uploading…" : profile.avatarUrl ? "Change photo" : "Upload photo"}
+          </button>
+          <input
+            ref={fileInput}
+            type="file"
+            accept="image/png,image/jpeg,image/webp"
+            hidden
+            onChange={(event) => void upload(event)}
+          />
+          {photoNote ? (
+            <span className="meta" role="status">
+              {photoNote}
+            </span>
+          ) : null}
         </div>
         {profile.interests.length > 0 ? (
           <>

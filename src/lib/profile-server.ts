@@ -6,6 +6,7 @@ const blank: PresentedProfile = {
   username: "",
   age: null,
   interests: [],
+  avatarUrl: "",
   complete: false,
   greetingName: "there",
   suggestedName: "",
@@ -24,5 +25,16 @@ export async function loadStudentProfile(): Promise<PresentedProfile> {
     .eq("id", user.id)
     .maybeSingle();
   if (error) console.error("profile read", error.code);
-  return presentProfile(row, { email: user.email, user_metadata: user.user_metadata });
+  // The avatar column ships in its own migration, so read it in a way that
+  // still leaves the rest of the profile usable before it is applied.
+  const { data: avatar, error: avatarError } = await supabase
+    .from("profiles")
+    .select("avatar_url")
+    .eq("id", user.id)
+    .maybeSingle();
+  if (avatarError) console.error("avatar read", avatarError.code);
+  return presentProfile(row ? { ...row, avatar_url: avatar?.avatar_url ?? null } : row, {
+    email: user.email,
+    user_metadata: user.user_metadata,
+  });
 }
