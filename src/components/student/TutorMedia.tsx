@@ -18,6 +18,7 @@ type MediaItem = {
   title: string;
   url: string;
   messageId: string;
+  pages?: number;
 };
 
 export function TutorMedia({ tutorId }: { tutorId: string }) {
@@ -119,8 +120,14 @@ export function TutorMedia({ tutorId }: { tutorId: string }) {
             <h3 className="meta">Images · {images.length}</h3>
             <div className="media-grid">
               {images.map((item) => (
-                <a key={`${item.messageId}-${item.url}`} className="media-img" href={item.messageId ? `/student/tutor/${tutor.id}#msg-${item.messageId}` : item.url}>
-                  <img src={item.url} alt="" />
+                <a
+                  key={`${item.messageId}-${item.url || item.title}`}
+                  className="media-img"
+                  href={item.url || (item.messageId ? `/student/tutor/${tutor.id}#msg-${item.messageId}` : "#")}
+                  target={item.url ? "_blank" : undefined}
+                  rel={item.url ? "noreferrer" : undefined}
+                >
+                  {item.url ? <img src={item.url} alt="" /> : null}
                   <span>{item.title}</span>
                 </a>
               ))}
@@ -133,18 +140,24 @@ export function TutorMedia({ tutorId }: { tutorId: string }) {
               Links and PDFs · {docs.length}
             </h3>
             <div className="list">
-              {docs.map((item) => (
-                <a
-                  key={`${item.messageId}-${item.url}`}
-                  className="media-row"
-                  href={item.messageId ? `/student/tutor/${tutor.id}#msg-${item.messageId}` : item.url}
-                >
-                  <span className="mtag">{item.kind === "pdf" ? "PDF" : "Link"}</span>
-                  <span>
-                    <b>{item.title}</b>
-                  </span>
-                </a>
-              ))}
+              {docs.map((item) => {
+                const file = item.kind === "pdf" && /^https?:\/\//i.test(item.url);
+                return (
+                  <a
+                    key={`${item.messageId}-${item.url || item.title}`}
+                    className="media-row"
+                    href={file ? item.url : item.messageId ? `/student/tutor/${tutor.id}#msg-${item.messageId}` : item.url}
+                    target={file ? "_blank" : undefined}
+                    rel={file ? "noreferrer" : undefined}
+                  >
+                    <span className="mtag">{item.kind === "pdf" ? "PDF" : "Link"}</span>
+                    <span>
+                      <b>{item.title}</b>
+                      {item.kind === "pdf" && item.pages ? <span className="meta"> · {item.pages === 1 ? "1 page" : `${item.pages} pages`}</span> : null}
+                    </span>
+                  </a>
+                );
+              })}
             </div>
           </>
         ) : null}

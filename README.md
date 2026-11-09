@@ -25,8 +25,9 @@ Leave the Groq and Supabase keys blank to use demo mode. Tutor chat, materials, 
 | `OPENAI_API_KEY` or `LLM_API_KEY` | Server only. Used only when `GROQ_API_KEY` is blank |
 | `LLM_BASE_URL` or `OPENAI_BASE_URL` | Optional OpenAI-compatible Chat Completions base URL. Groq defaults to `https://api.groq.com/openai/v1` |
 | `LLM_MODEL` | Model id. Default `openai/gpt-oss-20b` on Groq, otherwise `gpt-4o-mini` |
+| `GROQ_VISION_MODEL` | Optional. Images in tutor chat. Default `qwen/qwen3.8-27b` when `GROQ_API_KEY` is set. Uses the same key |
 
-Apply both files in `supabase/migrations/` in the Supabase SQL editor when you have a project. The migrations expect Supabase Auth (`auth.users`). They do not create a project. Without Supabase, tutors, packs, and tests live in a server session file (`.data/`, gitignored) keyed by an httpOnly cookie.
+Apply the SQL files in `supabase/migrations/` in order in the Supabase SQL editor when you have a project. `20261109210000_chat_uploads.sql` adds the private `chat-uploads` bucket and `message_attachments`. The app does not apply it. The migrations expect Supabase Auth (`auth.users`). They do not create a project. Without Supabase, tutors, packs, and tests live in a server session file (`.data/`, gitignored) keyed by an httpOnly cookie.
 
 `npm run build` typechecks and builds. `npm run check:rules` checks the gap rule, quiz scoring, recommendations, and the assign gate.
 

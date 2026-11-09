@@ -7,6 +7,7 @@ import {
   mergeAttachments,
   messageBody,
 } from "@/lib/chat-thread";
+import { ChatUploadError, prepareChatUploads, uploadAttachments, uploadPrompt, type PreparedUpload } from "@/lib/chat-uploads";
 import { demoPayload, modelFailed, parseBody, readJson } from "@/lib/http";
 import { generateStructured, llmConfigured } from "@/lib/llm";
 import { mascotColorFor } from "@/lib/mascot-color";
@@ -29,6 +30,7 @@ import type { ExplanationStyle, LearningLevel, Tutor, TutorMessage } from "@/lib
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+export const maxDuration = 60;
 
 export async function POST(request: Request) {
   const parsed = parseBody(tutorChatSchema, await readJson(request));
@@ -75,9 +77,28 @@ export async function POST(request: Request) {
     updatedAt: "",
   };
 
+  const typed = (input.message ?? "").trim();
+  const guardedEarly = isOffCourse(course, typed) || isRuleBreakAttempt(typed);
+  const userMessageId = crypto.randomUUID();
+  let prepared: PreparedUpload[] = [];
+  if (input.uploads && input.uploads.length > 0) {
+    if (!tutor) return NextResponse.json({ error: "Open a saved tutor to attach a file." }, { status: 400 });
+    try {
+      prepared = await prepareChatUploads(owner, tutor.id, input.uploads, userMessageId, {
+        describeImages: llmConfigured() && !guardedEarly,
+      });
+    } catch (error) {
+      if (error instanceof ChatUploadError) return NextResponse.json({ error: error.message }, { status: error.status });
+      console.error("POST /api/tutor/chat upload", error instanceof Error ? error.name : "error");
+      return NextResponse.json({ error: "Could not read that file." }, { status: 500 });
+    }
+  }
+  const text =
+    typed.length >= 2 ? typed : `Look at ${prepared.map((item) => item.filename).join(", ")}.`;
+
   const packs = await listMaterials(owner.id);
   const notes = notesForCourse(packs, course);
-  const preference = detectResourcePreference(input.message);
+  const preference = detectResourcePreference(text);
   let resources = preference
     ? assembleResources({ subject: course, topic, level, preference })
     : null;
@@ -89,8 +110,9 @@ export async function POST(request: Request) {
     }
   }
 
-  const guarded = isOffCourse(course, input.message) || isRuleBreakAttempt(input.message);
-  const replyInput = { name, course, topic, style, message: input.message, mode: input.mode };
+  const guarded = isOffCourse(course, text) || isRuleBreakAttempt(text);
+  const replyInput = { name, course, topic, style, message: text, mode: input.mode };
+  const documents = guarded ? "" : uploadPrompt(prepared);
 
   async function deliver(message: TutorMessage, flags: { guarded: boolean; demo: boolean }) {
     const sentAt = Date.now();
@@ -106,15 +128,16 @@ export async function POST(request: Request) {
     let messages: TutorMessage[] | undefined;
     if (tutor) {
       const userTurn = asStoredMessage({
+        id: userMessageId,
         role: "user",
-        short: input.message,
+        short: text,
         steps: [],
         remember: "",
         createdAt: new Date(sentAt).toISOString(),
-        attachments: attachmentsFromText(input.message),
+        attachments: mergeAttachments(uploadAttachments(prepared), attachmentsFromText(text)),
       });
       try {
-        messages = await appendTutorMessages(owner, tutor.id, [userTurn, tutorTurn]);
+        messages = await appendTutorMessages(owner, tutor.id, [userTurn, tutorTurn], prepared);
       } catch (error) {
         console.error("POST /api/tutor/chat persist", error instanceof Error ? error.name : "error");
         return NextResponse.json({ error: "Could not save this chat." }, { status: 500 });
@@ -134,7 +157,13 @@ export async function POST(request: Request) {
   }
 
   if (!llmConfigured() || guarded) {
-    return deliver(lecturerReply(replyInput), { guarded, demo: !llmConfigured() });
+    const reply = lecturerReply(replyInput);
+    const named = prepared.map((item) => item.filename).join(", ");
+    const withFiles =
+      !guarded && named
+        ? { ...reply, short: `I can see ${named}. ${reply.short}`.slice(0, 700) }
+        : reply;
+    return deliver(withFiles, { guarded, demo: !llmConfigured() });
   }
 
   try {
@@ -143,10 +172,11 @@ export async function POST(request: Request) {
       buildTutorPrompt({
         course,
         topic,
-        message: input.message,
+        message: text,
         mode: input.mode,
         notes,
         schoolLevel: input.level,
+        documents,
       }),
       buildTutorInstructions(active),
     );

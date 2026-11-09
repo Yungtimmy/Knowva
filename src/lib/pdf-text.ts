@@ -43,3 +43,30 @@ function decodePdfLiteral(value: string) {
 function cleanup(value: string) {
   return value.replace(/\s+/g, " ").trim().slice(0, 12000);
 }
+
+/** Page objects only. `/Type /Pages` is the parent and does not count. */
+export function countPdfPages(bytes: Uint8Array) {
+  const raw = Buffer.from(bytes).toString("latin1");
+  const matches = raw.match(/\/Type\s*\/Page(?!s)/g);
+  return matches && matches.length > 0 ? matches.length : null;
+}
+
+/**
+ * Prefer unpdf (pdf.js, Node-safe on Vercel). The literal parser covers the
+ * tiny fixtures and PDFs unpdf cannot open. Scanned pages stay empty.
+ */
+export async function extractPdfDocument(bytes: Uint8Array): Promise<{ text: string; pages: number | null }> {
+  const fallbackPages = countPdfPages(bytes);
+  try {
+    const { extractText, getDocumentProxy } = await import("unpdf");
+    // pdf.js may detach the buffer it is given. Keep the caller's bytes for the fallback parser.
+    const pdf = await getDocumentProxy(bytes.slice());
+    const result = await extractText(pdf, { mergePages: true });
+    const raw = typeof result.text === "string" ? result.text : "";
+    const pages = Number.isFinite(result.totalPages) && result.totalPages > 0 ? result.totalPages : fallbackPages;
+    if (raw.trim().length >= 8) return { text: raw, pages };
+  } catch {
+    // Literal parser below.
+  }
+  return { text: extractPdfText(bytes), pages: fallbackPages };
+}

@@ -1,13 +1,21 @@
 import { z } from "zod";
 
+const chatUploadSchema = z.object({
+  path: z.string().trim().min(1).max(400),
+  filename: z.string().trim().min(1).max(180),
+  mime: z.enum(["application/pdf", "image/png", "image/jpeg", "image/webp"]),
+  size: z.number().int().positive().max(10 * 1024 * 1024),
+});
+
 export const tutorChatSchema = z
   .object({
     tutorId: z.string().trim().min(1).max(80).optional(),
     level: z.string().trim().min(1).max(40).optional(),
     subject: z.string().trim().min(1).max(120).optional(),
     topic: z.string().trim().min(1).max(160).optional(),
-    message: z.string().trim().min(2).max(2000),
+    message: z.string().trim().max(2000).optional().default(""),
     mode: z.enum(["explain", "simpler", "example", "diagram"]).optional(),
+    uploads: z.array(chatUploadSchema).max(3).optional(),
   })
   .superRefine((value, ctx) => {
     if (!value.tutorId && (!value.level || !value.subject || !value.topic)) {
@@ -15,6 +23,21 @@ export const tutorChatSchema = z
         code: z.ZodIssueCode.custom,
         message: "Send a tutorId, or level, subject, and topic.",
         path: ["tutorId"],
+      });
+    }
+    const text = value.message.trim();
+    const files = value.uploads?.length ?? 0;
+    if (text.length === 1) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Write a little more, or attach a file.",
+        path: ["message"],
+      });
+    } else if (text.length < 2 && files === 0) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Write a message or attach a file.",
+        path: ["message"],
       });
     }
   });
@@ -175,6 +198,7 @@ export const testCreateSchema = z.object({
   topics: z.array(z.string().trim().min(1).max(80)).max(8).optional(),
   format: z.literal("multiple_choice").optional(),
   tutorId: z.string().trim().min(1).max(80).optional(),
+  sourceAttachmentId: z.string().uuid().optional(),
 });
 
 export const testSubmitSchema = z.object({
