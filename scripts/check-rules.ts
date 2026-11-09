@@ -16,9 +16,12 @@ import { asStoredMessage, chatMatchCount } from "../src/lib/chat-thread.ts";
 import {
   buildChatUploadPath,
   capExtractedText,
+  canRemoveUpload,
   isOwnChatUploadPath,
+  planSignedUpload,
   sniffChatMime,
   takeChatFiles,
+  uploadSessionDecision,
   validateChatFile,
   wrapUploadedDocuments,
 } from "../src/lib/chat-files.ts";
@@ -469,6 +472,62 @@ assert.equal(isOwnChatUploadPath(`${ownerId}/${tutorId}/${fileId}-notes.pdf/extr
 assert.equal(isOwnChatUploadPath(`${ownerId}/${fileId}-notes.pdf`, ownerId, tutorId), false);
 assert.equal(isOwnChatUploadPath(`/${uploadPath}`, ownerId, tutorId), false);
 assert.match(uploadPath, /My-Notes\.PDF$/);
+
+const cookieOwner = { id: ownerId, persisted: "supabase" as const, hasSession: true };
+const browserOnly = { id: `session:${ownerId}`, persisted: "session" as const, hasSession: false };
+assert.equal(uploadSessionDecision(cookieOwner).ok, true);
+assert.equal(uploadSessionDecision(browserOnly).ok, false);
+assert.equal(uploadSessionDecision({ id: ownerId, persisted: "supabase", hasSession: false }).ok, false);
+let signedFor = "";
+let signCalls = 0;
+const ticket = await planSignedUpload({
+  actor: cookieOwner,
+  tutorId,
+  tutorOwned: true,
+  filename: "photosynthesis-notes.pdf",
+  mime: "application/pdf",
+  size: 1200,
+  fileId,
+  sign: async (path) => {
+    signCalls += 1;
+    signedFor = path;
+    return `https://example.supabase.co/storage/v1/object/upload/sign/chat-uploads/${path}?token=signed`;
+  },
+});
+assert.equal(ticket.ok, true);
+assert.equal(signCalls, 1);
+assert.equal(isOwnChatUploadPath(signedFor, ownerId, tutorId), true);
+assert.equal(isOwnChatUploadPath(signedFor, otherId, tutorId), false);
+assert.equal(signedFor.startsWith(`${ownerId}/${tutorId}/`), true);
+const denied = await planSignedUpload({
+  actor: browserOnly,
+  tutorId,
+  tutorOwned: true,
+  filename: "photosynthesis-notes.pdf",
+  mime: "application/pdf",
+  size: 1200,
+  fileId,
+  sign: async () => {
+    signCalls += 1;
+    return "https://example.supabase.co/storage/v1/object/upload/sign/nope?token=x";
+  },
+});
+assert.equal(denied.ok, false);
+if (!denied.ok) {
+  assert.equal(denied.status, 401);
+  assert.match(denied.error, /Sign in to attach a file/);
+}
+assert.equal(signCalls, 1);
+const foreign = buildChatUploadPath(otherId, tutorId, fileId, "notes.pdf");
+const removal = canRemoveUpload(cookieOwner, tutorId, foreign);
+assert.equal(removal.ok, false);
+if (!removal.ok) assert.equal(removal.status, 403);
+assert.equal(canRemoveUpload(cookieOwner, tutorId, signedFor).ok, true);
+const uploadClient = readFileSync(new URL("../src/lib/chat-upload-client.ts", import.meta.url), "utf8");
+assert.equal(uploadClient.includes("getSession"), false);
+assert.equal(uploadClient.includes("getUser"), false);
+assert.equal(uploadClient.includes("createBrowserClient"), false);
+assert.match(uploadClient, /signedUrl/);
 
 assert.equal(sniffChatMime(Uint8Array.from([0x25, 0x50, 0x44, 0x46, 0x2d])), "application/pdf");
 assert.equal(sniffChatMime(Uint8Array.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a])), "image/png");

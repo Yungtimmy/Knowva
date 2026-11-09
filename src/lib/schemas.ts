@@ -1,5 +1,15 @@
 import { z } from "zod";
 
+export const uploadTicketSchema = z.object({
+  filename: z.string().trim().min(1).max(180),
+  mime: z.enum(["application/pdf", "image/png", "image/jpeg", "image/webp"]),
+  size: z.number().int().positive().max(10 * 1024 * 1024),
+});
+
+export const uploadRemoveSchema = z.object({
+  path: z.string().trim().min(1).max(400),
+});
+
 const chatUploadSchema = z.object({
   path: z.string().trim().min(1).max(400),
   filename: z.string().trim().min(1).max(180),

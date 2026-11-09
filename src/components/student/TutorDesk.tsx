@@ -4,17 +4,16 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { Mascot } from "@/components/Mascot";
-import { ApiError, getJson, postJson } from "@/lib/api-client";
+import { ApiError, getJson, postJson, sendJson } from "@/lib/api-client";
 import {
   CHAT_UPLOAD_ACCEPT,
-  buildChatUploadPath,
   mimeForChatFile,
   pageLabel,
   takeChatFiles,
   validateChatFile,
 } from "@/lib/chat-files";
 import { chatMatchCount, groupMessagesByDay, matchSpans } from "@/lib/chat-thread";
-import { chatAccessToken, removeChatObject, signedInUserId, uploadChatObject } from "@/lib/chat-upload-client";
+import { uploadSignedChatObject } from "@/lib/chat-upload-client";
 import { demoTutorReply, tutorTitle } from "@/lib/demo";
 import { mascotColorFor } from "@/lib/mascot-color";
 import { clip } from "@/lib/student-format";
@@ -87,6 +86,8 @@ export function TutorDesk({
   const [quizId, setQuizId] = useState("");
   const fileRef = useRef<HTMLInputElement>(null);
   const dragDepth = useRef(0);
+  const cancelledUploads = useRef(new Set<string>());
+  const uploadPaths = useRef(new Map<string, string>());
   const filesRef = useRef(files);
   filesRef.current = files;
   const router = useRouter();
@@ -144,12 +145,6 @@ export function TutorDesk({
     const batch = takeChatFiles(files.length, list);
     if (batch.error) setAttachError(batch.error);
     if (batch.accepted.length === 0) return;
-    const userId = await signedInUserId();
-    const token = await chatAccessToken();
-    if (!userId || !token) {
-      setAttachError("Sign in to attach a file.");
-      return;
-    }
     for (const file of batch.accepted) {
       const check = validateChatFile({ name: file.name, type: mimeForChatFile(file), size: file.size });
       if (!check.ok) {
@@ -157,17 +152,7 @@ export function TutorDesk({
         continue;
       }
       const localId = crypto.randomUUID();
-      const path = buildChatUploadPath(userId, persistedId, crypto.randomUUID(), file.name);
       const previewUrl = check.kind === "image" ? URL.createObjectURL(file) : undefined;
-      const upload = uploadChatObject({
-        path,
-        file,
-        contentType: check.mime,
-        accessToken: token,
-        onProgress: (progress) => {
-          setFiles((current) => current.map((item) => (item.localId === localId ? { ...item, progress } : item)));
-        },
-      });
       setFiles((current) => [
         ...current,
         {
@@ -178,34 +163,62 @@ export function TutorDesk({
           size: file.size,
           progress: 0,
           status: "uploading",
-          path,
           previewUrl,
-          abort: upload.abort,
         },
       ]);
-      void upload.done
-        .then(() => {
-          setFiles((current) =>
-            current.map((item) => (item.localId === localId ? { ...item, status: "ready", progress: 100 } : item)),
-          );
-        })
-        .catch((caught: unknown) => {
-          if (caught instanceof Error && caught.message === "Upload cancelled.") return;
-          const message = caught instanceof Error ? caught.message : "That upload did not finish.";
-          setAttachError(`${file.name}: ${message}`);
-          setFiles((current) =>
-            current.map((item) => (item.localId === localId ? { ...item, status: "error", error: message } : item)),
-          );
-        });
+      void startSignedUpload(localId, file, check.mime);
+    }
+  }
+
+  async function startSignedUpload(localId: string, file: File, mime: LocalFile["mime"]) {
+    if (!persistedId) return;
+    try {
+      const ticket = await postJson<{ path: string; signedUrl: string }>(`/api/tutors/${persistedId}/uploads`, {
+        filename: file.name,
+        mime,
+        size: file.size,
+      });
+      uploadPaths.current.set(localId, ticket.path);
+      if (cancelledUploads.current.has(localId)) {
+        void sendJson(`/api/tutors/${persistedId}/uploads`, "DELETE", { path: ticket.path }).catch(() => undefined);
+        return;
+      }
+      const upload = uploadSignedChatObject({
+        signedUrl: ticket.signedUrl,
+        file,
+        onProgress: (progress) => {
+          setFiles((current) => current.map((item) => (item.localId === localId ? { ...item, progress } : item)));
+        },
+      });
+      setFiles((current) =>
+        current.map((item) => (item.localId === localId ? { ...item, path: ticket.path, abort: upload.abort } : item)),
+      );
+      await upload.done;
+      setFiles((current) =>
+        current.map((item) => (item.localId === localId ? { ...item, status: "ready", progress: 100 } : item)),
+      );
+    } catch (caught) {
+      if (caught instanceof Error && caught.message === "Upload cancelled.") return;
+      if (cancelledUploads.current.has(localId)) return;
+      const message = caught instanceof Error ? caught.message : "That upload did not finish.";
+      setAttachError(`${file.name}: ${message}`);
+      setFiles((current) =>
+        current.map((item) => (item.localId === localId ? { ...item, status: "error", error: message } : item)),
+      );
     }
   }
 
   function removeFile(localId: string) {
+    cancelledUploads.current.add(localId);
     setFiles((current) => {
       const file = current.find((item) => item.localId === localId);
+      const path = uploadPaths.current.get(localId) || file?.path;
       file?.abort?.();
       if (file?.previewUrl) URL.revokeObjectURL(file.previewUrl);
-      if (file?.path && file.status !== "uploading") void removeChatObject(file.path);
+      if (path && persistedId) {
+        void sendJson(`/api/tutors/${persistedId}/uploads`, "DELETE", { path }).catch(() => undefined);
+      }
+      uploadPaths.current.delete(localId);
       return current.filter((item) => item.localId !== localId);
     });
     setAttachError("");
