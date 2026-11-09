@@ -83,6 +83,66 @@ export function isOwnChatUploadPath(path: string, userId: string, tutorId: strin
   return true;
 }
 
+const SIGN_IN_TO_ATTACH = "Sign in to attach a file.";
+
+export type UploadActor = {
+  id: string;
+  persisted: "supabase" | "session";
+  /** True only when the server can use the cookie session's Supabase client. */
+  hasSession: boolean;
+};
+
+/** Upload auth follows the server cookie session. A browser-only session is not enough. */
+export function uploadSessionDecision(actor: UploadActor):
+  | { ok: true; userId: string }
+  | { ok: false; status: 401; error: string } {
+  if (actor.persisted !== "supabase" || !actor.hasSession || !UUID.test(actor.id)) {
+    return { ok: false, status: 401, error: SIGN_IN_TO_ATTACH };
+  }
+  return { ok: true, userId: actor.id };
+}
+
+export async function planSignedUpload(input: {
+  actor: UploadActor;
+  tutorId: string;
+  tutorOwned: boolean;
+  filename: string;
+  mime: string;
+  size: number;
+  fileId: string;
+  sign: (path: string) => Promise<string | null>;
+}): Promise<{ ok: true; path: string; signedUrl: string } | { ok: false; status: number; error: string }> {
+  const decision = uploadSessionDecision(input.actor);
+  if (!decision.ok) return decision;
+  if (!input.tutorOwned || !UUID.test(input.tutorId)) {
+    return { ok: false, status: 404, error: "Tutor not found." };
+  }
+  const check = validateChatFile({ name: input.filename, type: input.mime, size: input.size });
+  if (!check.ok) return { ok: false, status: 400, error: check.error };
+  const path = buildChatUploadPath(decision.userId, input.tutorId, input.fileId, input.filename);
+  if (!isOwnChatUploadPath(path, decision.userId, input.tutorId)) {
+    return { ok: false, status: 400, error: "That file is not in your uploads." };
+  }
+  const signedUrl = await input.sign(path);
+  if (!signedUrl || !/^https?:\/\//i.test(signedUrl)) {
+    return { ok: false, status: 502, error: "Could not start the upload." };
+  }
+  return { ok: true, path, signedUrl };
+}
+
+export function canRemoveUpload(
+  actor: UploadActor,
+  tutorId: string,
+  path: string,
+): { ok: true; path: string } | { ok: false; status: number; error: string } {
+  const decision = uploadSessionDecision(actor);
+  if (!decision.ok) return decision;
+  if (!isOwnChatUploadPath(path, decision.userId, tutorId)) {
+    return { ok: false, status: 403, error: "That file is not in your uploads." };
+  }
+  return { ok: true, path };
+}
+
 export function isStoredUploadPath(path: string) {
   if (!path || path.length > 400 || path.includes("..") || path.includes("\\") || path.startsWith("/")) return false;
   const parts = path.split("/");
