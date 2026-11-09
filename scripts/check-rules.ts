@@ -605,6 +605,16 @@ assert.match(migration, /chat_uploads_delete_own/);
 assert.doesNotMatch(migration, /user_metadata/);
 assert.doesNotMatch(migration, /security definer/i);
 
+const policyFix = readFileSync(new URL("../supabase/migrations/20261109223000_chat_uploads_policy_fix.sql", import.meta.url), "utf8");
+assert.match(policyFix, /owns_chat_upload_path\(storage\.objects\.name\)/);
+assert.match(policyFix, /function public\.owns_chat_upload_path\(object_name text\)/);
+assert.match(policyFix, /security invoker/i);
+assert.doesNotMatch(policyFix, /security definer/i);
+assert.doesNotMatch(policyFix, /from public\.tutors[\s\S]*?(?<![\w.])name(?![\w])/);
+for (const policy of ["chat_uploads_select_own", "chat_uploads_insert_own", "chat_uploads_update_own", "chat_uploads_delete_own"]) {
+  assert.match(policyFix, new RegExp(`create policy ${policy}`));
+}
+
 const readBack = await extractPdfDocument(miniPdf("Photosynthesis uses light."));
 assert.match(readBack.text, /Photosynthesis uses light/);
 assert.equal(readBack.pages, 1);
