@@ -111,6 +111,7 @@ label{font-size:13px;font-weight:500;color:var(--kn-ink-3);display:block;margin-
 
 /* ---- tutor chat, media, search (locked pack) ---- */
 .app.chat{padding-bottom:168px}
+.app.chat:has(.file-chips){padding-bottom:360px}
 .tutor-head{display:flex;align-items:center;gap:10px;margin-bottom:12px}
 .th-ava{display:grid;place-items:center;width:48px;height:48px;border-radius:16px;border:1.5px solid var(--kn-ink);background:#F7F4EC;text-decoration:none;flex:none;color:inherit}
 .th-ava .mascot{width:36px;height:29px}
@@ -126,12 +127,33 @@ label{font-size:13px;font-weight:500;color:var(--kn-ink-3);display:block;margin-
 .bubble-me{align-self:flex-end;max-width:85%;background:var(--kn-orange-soft);color:var(--kn-ink);padding:10px 14px;border-radius:16px 16px 4px 16px}
 .msg-tutor{display:flex;gap:8px;align-items:flex-start}
 .msg-tutor,.bubble-me{scroll-margin-top:12px;scroll-margin-bottom:140px}
+.app.chat:has(.file-chips) .msg-tutor,.app.chat:has(.file-chips) .bubble-me{scroll-margin-bottom:380px}
+.msg-files{display:flex;flex-direction:column;gap:8px;margin-top:8px}
+.msg-shot{display:block;max-width:220px;border-radius:12px;overflow:hidden;border:1.5px solid var(--kn-line)}
+.msg-shot img{display:block;width:100%;height:140px;object-fit:cover}
+.msg-pdf{display:flex;flex-direction:column;align-items:flex-start;gap:8px}
+.msg-pdf .att{margin-top:0;width:100%}
+.bubble-me .chip{margin-top:0}
 .att{display:flex;gap:8px;align-items:center;margin-top:8px;padding:8px 10px;border:1.5px solid var(--kn-line);border-radius:12px;text-decoration:none;color:var(--kn-ink);font-size:14px;background:var(--kn-cream)}
 .att b{font-size:11px;letter-spacing:.04em;text-transform:uppercase;background:var(--kn-ink);color:var(--kn-cream);border-radius:99px;padding:2px 8px}
 mark.msg-hit{background:var(--kn-yellow);color:var(--kn-ink);border-radius:4px;padding:0 2px}
 mark.msg-hit.cur{outline:2px solid var(--kn-ink);background:var(--kn-orange-soft)}
-.app.chat .composer{position:fixed;z-index:30;left:50%;transform:translateX(-50%);bottom:72px;width:min(448px,calc(100% - 32px));display:flex;gap:8px;align-items:center}
-.app.chat .composer input{flex:1;width:auto;min-width:0;border-radius:999px;border-color:var(--kn-ink)}
+.app.chat .composer{position:fixed;z-index:30;left:50%;transform:translateX(-50%);bottom:72px;width:min(448px,calc(100% - 32px));display:flex;flex-direction:column;gap:8px;align-items:stretch}
+.app.chat .composer-row{display:flex;gap:8px;align-items:center}
+.app.chat .composer-row .composer-input{flex:1;width:auto;min-width:0;border-radius:999px;border-color:var(--kn-ink)}
+.clip-btn{width:40px;height:40px;border-radius:14px;border:1.5px solid var(--kn-ink);display:grid;place-items:center;color:var(--kn-ink);background:var(--kn-surface);cursor:pointer;flex:none;padding:0}
+.clip-btn:disabled{opacity:.5;cursor:default}
+.file-input{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+.file-chips{display:flex;flex-direction:column;gap:6px}
+.file-chip{position:relative;display:flex;align-items:center;gap:8px;padding:8px 10px;border:1.5px solid var(--kn-ink);border-radius:14px;background:var(--kn-surface);overflow:hidden}
+.file-chip.bad{border-color:var(--kn-orange-deep)}
+.file-chip img{width:36px;height:36px;object-fit:cover;border-radius:8px;flex:none}
+.file-chip b{font-size:11px;letter-spacing:.04em;text-transform:uppercase;background:var(--kn-ink);color:var(--kn-cream);border-radius:99px;padding:2px 8px;flex:none}
+.file-chip-name{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:14px}
+.file-chip button{width:28px;height:28px;border:0;background:transparent;color:var(--kn-ink);font:600 18px var(--kn-font);cursor:pointer;flex:none}
+.file-chip-bar{position:absolute;left:0;bottom:0;height:3px;background:var(--kn-orange)}
+.composer-note{margin:0}
+.chat-drop.drop-on{outline:2px dashed var(--kn-ink);outline-offset:-8px;border-radius:16px}
 .media-sheet h2{margin:0}
 .media-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:8px}
 .media-img{position:relative;overflow:hidden;min-height:120px;border-radius:16px;border:1.5px solid var(--kn-ink);background:var(--kn-cream);display:flex;align-items:flex-end;padding:10px;text-decoration:none;color:var(--kn-ink);font-weight:600}

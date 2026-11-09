@@ -1,3 +1,4 @@
+import { isStoredUploadPath } from "./chat-files";
 import type { ChatAttachment, ChatAttachmentKind, ResourceBundle, TutorMessage } from "./types";
 
 const KINDS = new Set<ChatAttachmentKind>(["link", "pdf", "image"]);
@@ -108,15 +109,39 @@ export function attachmentsFromResources(bundle: ResourceBundle | null): ChatAtt
   return items;
 }
 
+const ATTACHMENT_ID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+export function readAttachment(item: unknown): ChatAttachment | null {
+  if (!item || typeof item !== "object") return null;
+  const row = item as { kind?: unknown; title?: unknown; url?: unknown; storagePath?: unknown; attachmentId?: unknown; pages?: unknown };
+  if (typeof row.kind !== "string" || !KINDS.has(row.kind as ChatAttachmentKind)) return null;
+  const storagePath = typeof row.storagePath === "string" && isStoredUploadPath(row.storagePath) ? row.storagePath : undefined;
+  const url = typeof row.url === "string" && /^https?:\/\//i.test(row.url) ? row.url : "";
+  if (!storagePath && !url) return null;
+  const titleSource = typeof row.title === "string" && row.title.trim() ? row.title : url || storagePath || "File";
+  const pages = typeof row.pages === "number" && Number.isInteger(row.pages) && row.pages >= 0 && row.pages < 5000 ? row.pages : undefined;
+  const attachmentId = typeof row.attachmentId === "string" && ATTACHMENT_ID.test(row.attachmentId) ? row.attachmentId : undefined;
+  return {
+    kind: row.kind as ChatAttachmentKind,
+    title: titleSource.slice(0, 160),
+    url,
+    storagePath,
+    attachmentId,
+    pages,
+  };
+}
+
 export function mergeAttachments(...groups: ChatAttachment[][]) {
   const seen = new Set<string>();
   const items: ChatAttachment[] = [];
   for (const group of groups) {
     for (const item of group) {
-      if (!item.url || !/^https?:\/\//i.test(item.url) || !KINDS.has(item.kind)) continue;
-      if (seen.has(item.url)) continue;
-      seen.add(item.url);
-      items.push({ kind: item.kind, title: (item.title || item.url).slice(0, 160), url: item.url });
+      const clean = readAttachment(item);
+      if (!clean) continue;
+      const key = clean.storagePath || clean.url;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      items.push(clean);
       if (items.length >= 8) return items;
     }
   }
@@ -125,14 +150,10 @@ export function mergeAttachments(...groups: ChatAttachment[][]) {
 
 export function normalizeAttachments(value: unknown): ChatAttachment[] {
   if (!Array.isArray(value)) return [];
-  return mergeAttachments(
-    value.flatMap((item) => {
-      if (!item || typeof item !== "object") return [];
-      const row = item as { kind?: string; title?: string; url?: string };
-      if (!row.kind || !KINDS.has(row.kind as ChatAttachmentKind) || !row.url) return [];
-      return [{ kind: row.kind as ChatAttachmentKind, title: row.title ?? row.url, url: row.url }];
-    }),
-  );
+  return mergeAttachments(value.flatMap((item) => {
+    const clean = readAttachment(item);
+    return clean ? [clean] : [];
+  }));
 }
 
 export function asStoredMessage(message: TutorMessage, extras?: { attachments?: ChatAttachment[] }): TutorMessage {

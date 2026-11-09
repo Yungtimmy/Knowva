@@ -33,7 +33,14 @@ export type ChatAttachmentKind = "link" | "pdf" | "image";
 export type ChatAttachment = {
   kind: ChatAttachmentKind;
   title: string;
+  /** Public https link, or a short-lived signed URL filled in when the thread is loaded. */
   url: string;
+  /** Private object path in the chat-uploads bucket. Absent on ordinary links. */
+  storagePath?: string;
+  /** Row id in message_attachments. Present on files saved for this student. */
+  attachmentId?: string;
+  /** PDF page count, when the file could be opened. */
+  pages?: number;
 };
 
 export type ResourcePreference = "video" | "pdf" | "course" | "mixed";

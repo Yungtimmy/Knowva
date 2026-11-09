@@ -1,14 +1,44 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useRouter } from "next/navigation";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { Mascot } from "@/components/Mascot";
 import { ApiError, getJson, postJson } from "@/lib/api-client";
+import {
+  CHAT_UPLOAD_ACCEPT,
+  buildChatUploadPath,
+  mimeForChatFile,
+  pageLabel,
+  takeChatFiles,
+  validateChatFile,
+} from "@/lib/chat-files";
 import { chatMatchCount, groupMessagesByDay, matchSpans } from "@/lib/chat-thread";
+import { chatAccessToken, removeChatObject, signedInUserId, uploadChatObject } from "@/lib/chat-upload-client";
 import { demoTutorReply, tutorTitle } from "@/lib/demo";
 import { mascotColorFor } from "@/lib/mascot-color";
 import { clip } from "@/lib/student-format";
 import type { ChatAttachment, TutorCard, TutorMessage } from "@/lib/types";
+
+type LocalFile = {
+  localId: string;
+  name: string;
+  kind: "pdf" | "image";
+  mime: "application/pdf" | "image/png" | "image/jpeg" | "image/webp";
+  size: number;
+  progress: number;
+  status: "uploading" | "ready" | "error";
+  error?: string;
+  path?: string;
+  previewUrl?: string;
+  abort?: () => void;
+};
+
+const PAPERCLIP = (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+    <path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 18 8.84l-8.59 8.57a2 2 0 0 1-2.83-2.83l8.49-8.48" />
+  </svg>
+);
 
 type Reply = { demo?: boolean; message: TutorMessage; messages?: TutorMessage[]; resources?: unknown };
 
@@ -51,6 +81,23 @@ export function TutorDesk({
   const [searchOpen, setSearchOpen] = useState(openSearch);
   const [query, setQuery] = useState("");
   const [activeIndex, setActiveIndex] = useState(0);
+  const [files, setFiles] = useState<LocalFile[]>([]);
+  const [attachError, setAttachError] = useState("");
+  const [dragging, setDragging] = useState(false);
+  const [quizId, setQuizId] = useState("");
+  const fileRef = useRef<HTMLInputElement>(null);
+  const dragDepth = useRef(0);
+  const filesRef = useRef(files);
+  filesRef.current = files;
+  const router = useRouter();
+
+  useEffect(() => {
+    return () => {
+      for (const file of filesRef.current) {
+        if (file.previewUrl) URL.revokeObjectURL(file.previewUrl);
+      }
+    };
+  }, []);
 
   useEffect(() => {
     if (!persistedId || seeded) return;
@@ -87,19 +134,125 @@ export function TutorDesk({
     document.getElementById("hit-current")?.scrollIntoView({ block: "center", behavior: "smooth" });
   }, [searchOpen, query, activeHit, totalHits, messages]);
 
-  async function ask(message: string, mode?: "explain" | "simpler" | "example" | "diagram") {
+  async function addFiles(list: File[]) {
+    if (locked || !historyReady || list.length === 0) return;
+    setAttachError("");
+    if (!persistedId) {
+      setAttachError("Open a saved tutor to attach a file.");
+      return;
+    }
+    const batch = takeChatFiles(files.length, list);
+    if (batch.error) setAttachError(batch.error);
+    if (batch.accepted.length === 0) return;
+    const userId = await signedInUserId();
+    const token = await chatAccessToken();
+    if (!userId || !token) {
+      setAttachError("Sign in to attach a file.");
+      return;
+    }
+    for (const file of batch.accepted) {
+      const check = validateChatFile({ name: file.name, type: mimeForChatFile(file), size: file.size });
+      if (!check.ok) {
+        setAttachError(`${file.name}: ${check.error}`);
+        continue;
+      }
+      const localId = crypto.randomUUID();
+      const path = buildChatUploadPath(userId, persistedId, crypto.randomUUID(), file.name);
+      const previewUrl = check.kind === "image" ? URL.createObjectURL(file) : undefined;
+      const upload = uploadChatObject({
+        path,
+        file,
+        contentType: check.mime,
+        accessToken: token,
+        onProgress: (progress) => {
+          setFiles((current) => current.map((item) => (item.localId === localId ? { ...item, progress } : item)));
+        },
+      });
+      setFiles((current) => [
+        ...current,
+        {
+          localId,
+          name: file.name,
+          kind: check.kind,
+          mime: check.mime,
+          size: file.size,
+          progress: 0,
+          status: "uploading",
+          path,
+          previewUrl,
+          abort: upload.abort,
+        },
+      ]);
+      void upload.done
+        .then(() => {
+          setFiles((current) =>
+            current.map((item) => (item.localId === localId ? { ...item, status: "ready", progress: 100 } : item)),
+          );
+        })
+        .catch((caught: unknown) => {
+          if (caught instanceof Error && caught.message === "Upload cancelled.") return;
+          const message = caught instanceof Error ? caught.message : "That upload did not finish.";
+          setAttachError(`${file.name}: ${message}`);
+          setFiles((current) =>
+            current.map((item) => (item.localId === localId ? { ...item, status: "error", error: message } : item)),
+          );
+        });
+    }
+  }
+
+  function removeFile(localId: string) {
+    setFiles((current) => {
+      const file = current.find((item) => item.localId === localId);
+      file?.abort?.();
+      if (file?.previewUrl) URL.revokeObjectURL(file.previewUrl);
+      if (file?.path && file.status !== "uploading") void removeChatObject(file.path);
+      return current.filter((item) => item.localId !== localId);
+    });
+    setAttachError("");
+  }
+
+  async function quizFrom(attachmentId: string) {
+    if (!persistedId || quizId || busy) return;
+    setQuizId(attachmentId);
+    setError("");
+    try {
+      const data = await postJson<{ test: { id: string } }>("/api/tests", {
+        course: subject,
+        tutorId: persistedId,
+        questionCount: 5,
+        difficulty: "medium",
+        topics: topic ? [topic.slice(0, 80)] : undefined,
+        format: "multiple_choice",
+        sourceAttachmentId: attachmentId,
+      });
+      router.push(`/student/tests/${data.test.id}`);
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : "Could not start the quiz.");
+      setQuizId("");
+    }
+  }
+
+  async function ask(message: string, mode?: "explain" | "simpler" | "example" | "diagram", attached?: LocalFile[]) {
     const text = message.trim();
-    if (text.length < 2 || busy || locked || !historyReady) return;
+    const ready = (attached ?? []).filter((file): file is LocalFile & { path: string } => file.status === "ready" && Boolean(file.path));
+    if (text.length === 1 || (text.length < 2 && ready.length === 0) || busy || locked || !historyReady) return;
+    if ((attached ?? []).some((file) => file.status === "uploading" || file.status === "error")) return;
     setError("");
     setBusy(true);
     setModeUsed(mode ?? "");
+    const shown = text.length >= 2 ? text : `Look at ${ready.map((file) => file.name).join(", ")}.`;
     const optimistic: TutorMessage = {
       id: crypto.randomUUID(),
       createdAt: new Date().toISOString(),
       role: "user",
-      short: text,
+      short: shown,
       steps: [],
       remember: "",
+      attachments: ready.map((file) => ({
+        kind: file.kind,
+        title: file.name,
+        url: file.previewUrl ?? "",
+      })),
     };
     setMessages((current) => [...current, optimistic]);
     setDraft("");
@@ -111,11 +264,28 @@ export function TutorDesk({
         topic,
         message: text,
         mode,
+        uploads:
+          ready.length > 0
+            ? ready.map((file) => ({ path: file.path, filename: file.name, mime: file.mime, size: file.size }))
+            : undefined,
       });
       setDemo(Boolean(data.demo));
       if (data.messages && data.messages.length > 0) setMessages(data.messages);
       else setMessages((current) => [...current, data.message]);
+      if (ready.length > 0) {
+        for (const file of ready) {
+          if (file.previewUrl) URL.revokeObjectURL(file.previewUrl);
+        }
+        setFiles([]);
+      }
     } catch (caught) {
+      if (ready.length > 0) {
+        setMessages((current) => current.filter((item) => item.id !== optimistic.id));
+        setDraft(text);
+        if (caught instanceof ApiError && caught.status === 423) setLocked(true);
+        setError(caught instanceof Error ? caught.message : "Could not send that.");
+        return;
+      }
       if (caught instanceof ApiError && caught.status === 423) {
         setLocked(true);
         setError(caught.message);
@@ -131,6 +301,12 @@ export function TutorDesk({
       setBusy(false);
     }
   }
+
+  const readyFiles = files.filter((file) => file.status === "ready" && file.path);
+  const sendBlocked = files.some((file) => file.status !== "ready");
+  const trimmedDraft = draft.trim();
+  const canSend =
+    !busy && !locked && historyReady && !sendBlocked && trimmedDraft.length !== 1 && (trimmedDraft.length >= 2 || readyFiles.length > 0);
 
   let seenHits = 0;
   function renderText(text: string, key: string) {
@@ -156,7 +332,28 @@ export function TutorDesk({
   const counter = query.trim().length < 2 ? "Type a word" : totalHits === 0 ? "0 of 0" : `${activeHit + 1} of ${totalHits}`;
 
   return (
-    <>
+    <div
+      className={dragging ? "chat-drop drop-on" : "chat-drop"}
+      onDragEnter={(event) => {
+        if (![...event.dataTransfer.types].includes("Files")) return;
+        event.preventDefault();
+        dragDepth.current += 1;
+        setDragging(true);
+      }}
+      onDragOver={(event) => {
+        if ([...event.dataTransfer.types].includes("Files")) event.preventDefault();
+      }}
+      onDragLeave={() => {
+        dragDepth.current = Math.max(0, dragDepth.current - 1);
+        if (dragDepth.current === 0) setDragging(false);
+      }}
+      onDrop={(event) => {
+        event.preventDefault();
+        dragDepth.current = 0;
+        setDragging(false);
+        void addFiles([...event.dataTransfer.files]);
+      }}
+    >
       <header className="tutor-head">
         <Link className="back" href={persistedId ? "/student/tutors" : "/student"} aria-label={persistedId ? "Back to tutors" : "Back home"}>
           ←
@@ -255,7 +452,12 @@ export function TutorDesk({
               if (message.role === "user") {
                 return (
                   <div key={message.id ?? `user-${index}`} id={message.id ? `msg-${message.id}` : undefined} className="bubble-me">
-                    {renderText(message.short, message.id ?? `user-${index}`)}
+                    {message.short ? renderText(message.short, message.id ?? `user-${index}`) : null}
+                    <MessageFiles
+                      items={message.attachments}
+                      onQuiz={persistedId ? quizFrom : undefined}
+                      quizId={quizId}
+                    />
                   </div>
                 );
               }
@@ -288,7 +490,7 @@ export function TutorDesk({
                         <p>{renderText(message.next, `${message.id}-next`)}</p>
                       </>
                     ) : null}
-                    <AttachmentList items={message.attachments} />
+                    <MessageFiles items={message.attachments} quizId="" />
                     {latest ? (
                       <div className="chips" style={{ marginTop: 12 }}>
                         <button className={modeUsed === "simpler" ? "chip on" : "chip"} type="button" disabled={busy || locked} onClick={() => ask(`Explain ${topic} more simply`, "simpler")}>
@@ -321,35 +523,134 @@ export function TutorDesk({
         className="composer"
         onSubmit={(event) => {
           event.preventDefault();
-          void ask(draft);
+          void ask(draft, undefined, files);
         }}
       >
+        {files.length > 0 ? (
+          <div className="file-chips">
+            {files.map((file) => (
+              <div key={file.localId} className={file.status === "error" ? "file-chip bad" : "file-chip"}>
+                {file.previewUrl ? <img src={file.previewUrl} alt="" /> : <b>{file.kind === "pdf" ? "PDF" : "Image"}</b>}
+                <span className="file-chip-name">{file.name}</span>
+                <span className="meta">{file.status === "error" ? "Failed" : file.status === "ready" ? "Ready" : `${file.progress}%`}</span>
+                <button type="button" aria-label={`Remove ${file.name}`} onClick={() => removeFile(file.localId)}>
+                  ×
+                </button>
+                {file.status === "uploading" ? <span className="file-chip-bar" style={{ width: `${file.progress}%` }} /> : null}
+              </div>
+            ))}
+          </div>
+        ) : null}
+        {attachError ? (
+          <p className="meta composer-note" role="alert">
+            {attachError}
+          </p>
+        ) : null}
+        <div className="composer-row">
+          <button
+            className="clip-btn"
+            type="button"
+            aria-label="Attach a PDF or image"
+            disabled={locked || !historyReady || busy}
+            onClick={() => fileRef.current?.click()}
+          >
+            {PAPERCLIP}
+          </button>
+          <input
+            className="composer-input"
+            value={draft}
+            onChange={(event) => setDraft(event.target.value)}
+            onPaste={(event) => {
+              const images = [...event.clipboardData.files].filter((file) => file.type.startsWith("image/"));
+              if (images.length === 0) return;
+              event.preventDefault();
+              void addFiles(images);
+            }}
+            placeholder={`Ask ${name}`}
+            aria-label={`Ask ${name}`}
+            disabled={locked || !historyReady}
+          />
+          <button className="btn btn-primary btn-sm" type="submit" disabled={!canSend}>
+            Send
+          </button>
+        </div>
         <input
-          value={draft}
-          onChange={(event) => setDraft(event.target.value)}
-          placeholder={`Ask ${name}`}
-          aria-label={`Ask ${name}`}
-          disabled={locked || !historyReady}
+          ref={fileRef}
+          className="file-input"
+          type="file"
+          multiple
+          accept={CHAT_UPLOAD_ACCEPT}
+          aria-hidden="true"
+          tabIndex={-1}
+          onChange={(event) => {
+            const picked = [...(event.target.files ?? [])];
+            event.target.value = "";
+            void addFiles(picked);
+          }}
         />
-        <button className="btn btn-primary btn-sm" type="submit" disabled={busy || locked || !historyReady}>
-          Send
-        </button>
       </form>
-    </>
+    </div>
   );
 }
 
-function AttachmentList({ items }: { items?: ChatAttachment[] }) {
+function MessageFiles({
+  items,
+  onQuiz,
+  quizId,
+}: {
+  items?: ChatAttachment[];
+  onQuiz?: (attachmentId: string) => void;
+  quizId: string;
+}) {
   if (!items || items.length === 0) return null;
   return (
-    <>
-      {items.map((item) => (
-        <a className="att" key={item.url} href={item.url} target="_blank" rel="noreferrer">
-          <b>{item.kind === "pdf" ? "PDF" : item.kind === "image" ? "Image" : "Link"}</b>
-          {item.title}
-        </a>
-      ))}
-    </>
+    <div className="msg-files">
+      {items.map((item) => {
+        const key = item.storagePath || item.attachmentId || item.url || item.title;
+        if (item.kind === "image" && item.url) {
+          return (
+            <a key={key} className="msg-shot" href={item.url} target="_blank" rel="noreferrer">
+              <img src={item.url} alt={item.title} />
+            </a>
+          );
+        }
+        if (item.kind === "pdf") {
+          const pages = pageLabel(item.pages);
+          const body = (
+            <>
+              <b>PDF</b>
+              <span>
+                {item.title}
+                {pages ? <span className="meta"> · {pages}</span> : null}
+              </span>
+            </>
+          );
+          return (
+            <div key={key} className="msg-pdf">
+              {item.url ? (
+                <a className="att" href={item.url} target="_blank" rel="noreferrer">
+                  {body}
+                </a>
+              ) : (
+                <div className="att">{body}</div>
+              )}
+              {onQuiz && item.attachmentId ? (
+                <button className="chip" type="button" disabled={Boolean(quizId)} onClick={() => onQuiz(item.attachmentId ?? "")}>
+                  {quizId === item.attachmentId ? "Writing the quiz" : "Quiz me on this"}
+                </button>
+              ) : null}
+            </div>
+          );
+        }
+        if (!item.url) return null;
+        return (
+          <a className="att" key={key} href={item.url} target="_blank" rel="noreferrer">
+            <b>{item.kind === "image" ? "Image" : "Link"}</b>
+            {item.title}
+          </a>
+        );
+      })}
+    </div>
   );
 }
 
