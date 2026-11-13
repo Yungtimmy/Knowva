@@ -101,7 +101,9 @@ export function LoginScreen({
             </>
           )}
         </p>
-        <p className="fine">By continuing you agree to our Terms and Privacy Policy.</p>
+        <p className="fine">
+          By continuing you agree to our <Link href="/terms">Terms</Link> and <Link href="/privacy">Privacy Policy</Link>.
+        </p>
       </main>
     </div>
   );

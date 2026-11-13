@@ -63,7 +63,7 @@ button, input, select, textarea { font-family: inherit; }
 .auth-clouds svg, .cta-clouds svg { margin: 0 -8px; display: block; }
 
 .auth-screen {
-  min-height: 100vh;
+  flex: 1;
   display: grid;
   place-items: center;
   padding: 24px;
@@ -162,6 +162,16 @@ button, input, select, textarea { font-family: inherit; }
   text-decoration: none;
 }
 .auth-card .fine { margin-top: 18px; font-size: 12px; color: var(--kn-ink-3); }
+.auth-card .fine a,
+.auth-card .fine a:link,
+.auth-card .fine a:visited,
+.auth-card .fine a:hover,
+.auth-card .fine a:active {
+  color: var(--kn-ink);
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
 .auth-card .error { color: var(--kn-orange-deep); font-size: 14px; margin-top: 14px; }
 
 @media (max-width: 520px) {
