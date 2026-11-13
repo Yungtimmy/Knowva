@@ -2,6 +2,7 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import { isProfileComplete, profileFromRow } from "@/lib/profile";
 import { safeNextPath } from "@/lib/safe-next";
+import { isPublicPath } from "@/lib/site";
 
 function isTeacherPage(pathname: string) {
   return pathname === "/teacher" || pathname.startsWith("/teacher/");
@@ -81,6 +82,7 @@ export async function proxy(request: NextRequest) {
   const claims = data?.claims;
   const signedIn = Boolean(claims?.sub) && claims?.is_anonymous !== true;
 
+  if (isPublicPath(pathname)) return response;
   if (!signedIn && corePage) return loginRedirect(request, response);
   if (!signedIn && coreApi) {
     return carrySession(response, NextResponse.json({ error: "Sign in first." }, { status: 401 }));

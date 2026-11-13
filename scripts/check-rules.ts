@@ -36,6 +36,8 @@ import { acceptGeneratedQuestions, fillTestQuestions, normalizeTopics } from "..
 import { createPaper, getPaper, mergeSealedQuestions, toPaper } from "../src/lib/test-repo.ts";
 import { openSeal, sealAnswers } from "../src/lib/test-seal.ts";
 import { topicSeeds } from "../src/lib/student-format.ts";
+import { CONTACT_EMAIL, isPublicPath, PATH, PUBLIC_PATHS } from "../src/lib/site.ts";
+import { FAQ, privacyPage, termsPage, footerCopy, type InlinePart } from "../src/lib/site-copy.ts";
 import { TUTOR_CAP, type Question } from "../src/lib/types.ts";
 
 assert.equal(topicStatus(48), "gap");
@@ -618,6 +620,54 @@ for (const policy of ["chat_uploads_select_own", "chat_uploads_insert_own", "cha
 const readBack = await extractPdfDocument(miniPdf("Photosynthesis uses light."));
 assert.match(readBack.text, /Photosynthesis uses light/);
 assert.equal(readBack.pages, 1);
+
+assert.equal(CONTACT_EMAIL, "TODO");
+assert.deepEqual([...PUBLIC_PATHS], ["/faq", "/terms", "/privacy"]);
+for (const path of PUBLIC_PATHS) assert.equal(isPublicPath(path), true);
+assert.equal(isPublicPath("/student"), false);
+const proxySource = readFileSync(new URL("../src/proxy.ts", import.meta.url), "utf8");
+const publicGate = proxySource.indexOf("isPublicPath(pathname)");
+const loginGate = proxySource.indexOf("!signedIn && corePage");
+assert.ok(publicGate !== -1 && loginGate !== -1 && publicGate < loginGate);
+
+function plain(parts: InlinePart[][]) {
+  return parts
+    .map((paragraph) => paragraph.map((part) => (typeof part === "string" ? part : part.label)).join(""))
+    .join("\n");
+}
+
+assert.ok(FAQ.length >= 8 && FAQ.length <= 10);
+const faqQuestions = FAQ.map((item) => item.question).join("\n");
+assert.match(faqQuestions, /What are Media and search\?/);
+const who = FAQ.find((item) => item.id === "who");
+assert.ok(who);
+assert.match(plain(who.paragraphs), /Secondary school and university students/);
+assert.doesNotMatch(plain(who.paragraphs), /teacher|lecturer/i);
+const data = FAQ.find((item) => item.id === "data");
+assert.ok(data);
+const dataText = plain(data.paragraphs);
+assert.match(dataText, /sign in with Google/);
+assert.match(dataText, /Supabase/);
+assert.match(dataText, /visible only to your account/);
+assert.match(dataText, /Chat text and the contents of uploaded files are sent to Groq/);
+assert.match(dataText, /does not show ads/);
+assert.match(dataText, /does not sell your data/);
+assert.match(dataText, /Privacy Policy/);
+const legalText = [termsPage, privacyPage].map((page) => `${page.updated}\n${page.sections.map((section) => plain(section.paragraphs)).join("\n")}`).join("\n");
+assert.match(legalText, /Last updated: November 13, 2026/);
+assert.match(termsPage.updated, /Last updated: November 13, 2026/);
+assert.match(privacyPage.updated, /Last updated: November 13, 2026/);
+assert.match(legalText, /Chat text and uploaded file contents are sent to Groq to generate answers/);
+assert.match(legalText, /TODO is a placeholder address/);
+assert.doesNotMatch(legalText, /!/);
+const faqBody = FAQ.map((item) => `${item.question}\n${plain(item.paragraphs)}`).join("\n");
+assert.doesNotMatch(faqBody, /!/);
+assert.doesNotMatch(`${faqBody}\n${legalText}`, /seamless|empower|unlock|robust/i);
+assert.equal(footerCopy.product.find((item) => item.label === "Tutors")?.href, PATH.tutors);
+assert.equal(footerCopy.product.find((item) => item.label === "Test Centre")?.href, PATH.tests);
+assert.equal(footerCopy.product.find((item) => item.label === "Media")?.href, PATH.media);
+assert.equal(footerCopy.help.find((item) => item.label === "FAQ")?.href, PATH.faq);
+assert.equal(footerCopy.ctaHref, PATH.getStarted);
 
 console.log("rules ok");
 

@@ -22,7 +22,7 @@ const TABS = [
 
 function tabId(pathname: string) {
   if (pathname.startsWith("/student/quiz")) return "tests";
-  if (pathname.startsWith("/student/tutors") || pathname.startsWith("/student/tutor")) return "tutors";
+  if (pathname.startsWith("/student/tutors") || pathname.startsWith("/student/tutor") || pathname.startsWith("/student/media")) return "tutors";
   if (pathname.startsWith("/student/learn") || pathname.startsWith("/student/materials")) return "learn";
   if (pathname.startsWith("/student/tests")) return "tests";
   if (pathname.startsWith("/student/profile")) return "profile";
