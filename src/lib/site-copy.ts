@@ -53,6 +53,11 @@ export const FAQ: FaqItem[] = [
     ],
   },
   {
+    id: "sign-in",
+    question: "How do I sign in?",
+    paragraphs: [["Continue with Google. There's no separate password to remember."]],
+  },
+  {
     id: "who",
     question: "Who is it for?",
     paragraphs: [
@@ -75,16 +80,16 @@ export const FAQ: FaqItem[] = [
     question: "Can I upload my own notes?",
     paragraphs: [
       [
-        "Yes. Attach a PDF or an image in the tutor chat and the tutor answers from it. Every upload is kept in Media. Text-based PDFs work best; scanned or handwritten pages may not read correctly.",
+        "Yes. Attach a PDF or an image in the tutor chat and the tutor answers from it. Text-based PDFs work best; scanned or handwritten pages may not read correctly.",
       ],
     ],
   },
   {
-    id: "media",
-    question: "What are Media and search?",
+    id: "files",
+    question: "Where do my files go?",
     paragraphs: [
       [
-        "Each tutor chat has a Media page and a search box. Media lists the links, PDFs, and images from that chat, with filters for each. Search finds words in the conversation and steps through the matches. Open Media from the tutor's picture, and search from the button in the chat header.",
+        "Every tutor has its own Media page. It keeps your PDFs, images and links in one place, with filters for each type and a search to find a file fast.",
       ],
     ],
   },
@@ -120,9 +125,9 @@ export const FAQ: FaqItem[] = [
     question: "What happens to my data?",
     paragraphs: [
       [
-        "You sign in with Google. Tutors, chats, and test results are stored in Supabase. Uploads are stored privately in Supabase Storage and are visible only to your account. Chat text and the contents of uploaded files are sent to Groq to generate answers. Knowva does not show ads and does not sell your data. Read the ",
+        "Your uploads are stored privately and only you can open them. To write answers, your chat messages and the contents of files you attach are sent to Groq, the AI service Knowva runs on. The ",
         { href: PATH.privacy, label: "Privacy Policy" },
-        ".",
+        " has the full details.",
       ],
     ],
   },

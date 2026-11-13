@@ -636,22 +636,32 @@ function plain(parts: InlinePart[][]) {
     .join("\n");
 }
 
-assert.ok(FAQ.length >= 8 && FAQ.length <= 10);
-const faqQuestions = FAQ.map((item) => item.question).join("\n");
-assert.match(faqQuestions, /What are Media and search\?/);
+assert.equal(FAQ.length, 10);
+const faqQuestions = FAQ.map((item) => item.question);
+assert.deepEqual(faqQuestions, [
+  "What is Knowva?",
+  "How do I sign in?",
+  "Who is it for?",
+  "Will the tutor just give me answers?",
+  "Can I upload my own notes?",
+  "Where do my files go?",
+  "What's the difference between a quiz and a test?",
+  "Does creating a tutor train a new AI?",
+  "Can the tutor be wrong?",
+  "What happens to my data?",
+]);
 const who = FAQ.find((item) => item.id === "who");
 assert.ok(who);
 assert.match(plain(who.paragraphs), /Secondary school and university students/);
 assert.doesNotMatch(plain(who.paragraphs), /teacher|lecturer/i);
+const files = FAQ.find((item) => item.id === "files");
+assert.ok(files);
+assert.match(plain(files.paragraphs), /with filters for each type/);
 const data = FAQ.find((item) => item.id === "data");
 assert.ok(data);
 const dataText = plain(data.paragraphs);
-assert.match(dataText, /sign in with Google/);
-assert.match(dataText, /Supabase/);
-assert.match(dataText, /visible only to your account/);
-assert.match(dataText, /Chat text and the contents of uploaded files are sent to Groq/);
-assert.match(dataText, /does not show ads/);
-assert.match(dataText, /does not sell your data/);
+assert.match(dataText, /stored privately and only you can open them/);
+assert.match(dataText, /chat messages and the contents of files you attach are sent to Groq/);
 assert.match(dataText, /Privacy Policy/);
 const legalText = [termsPage, privacyPage].map((page) => `${page.updated}\n${page.sections.map((section) => plain(section.paragraphs)).join("\n")}`).join("\n");
 assert.match(legalText, /Last updated: November 13, 2026/);

@@ -8,5 +8,5 @@ export const metadata: Metadata = {
 };
 
 export default function FaqPage() {
-  return <FaqSection heading="h1" />;
+  return <FaqSection heading="h1" standalone />;
 }

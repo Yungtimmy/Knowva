@@ -3,10 +3,10 @@ import { FAQ, faqIntro } from "@/lib/site-copy";
 import { Inline } from "./Inline";
 import styles from "./site.module.css";
 
-export function FaqSection({ heading = "h2" }: { heading?: "h1" | "h2" }) {
+export function FaqSection({ heading = "h2", standalone = false }: { heading?: "h1" | "h2"; standalone?: boolean }) {
   const Title = heading;
   return (
-    <section className={styles.faq} id="faq" aria-labelledby="faq-title">
+    <section className={standalone ? `${styles.faq} ${styles.faqStandalone}` : styles.faq} id="faq" aria-labelledby="faq-title">
       <div className={`${styles.wrap} ${styles.grid}`}>
         <div className={styles.side}>
           <span className={styles.eyebrow}>{faqIntro.eyebrow}</span>
